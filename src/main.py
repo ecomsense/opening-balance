@@ -3,7 +3,6 @@ from helper import Helper
 from strategy import Strategy
 from toolkit.kokoo import is_time_past, kill_tmux, timer
 from traceback import print_exc
-import pendulum as pdlm
 from wserver import Wserver
 from pprint import pprint
 
@@ -24,12 +23,12 @@ class Jsondb:
 
     @classmethod
     def read_buy_order_ids(cls):
-        order_from_file = O_FUTL.read_file(cls.F_ORDERS)
+        order_from_file = O_FUTL.json_fm_file(cls.F_ORDERS)
         """ extract key from list of dictionary """
         ids = []
         if order_from_file and any(order_from_file):
             ids = [order["_id"] for order in order_from_file]
-            print(ids)
+            logging.debug(ids)
         return ids
 
     @classmethod
@@ -75,7 +74,7 @@ class Jsondb:
             """
             now = pdlm.now()
             fm = now.replace(hour=9, minute=15, second=0, microsecond=0).timestamp()
-            to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+            to = now.().timestamp()
             resp = Helper.api.historical(exchange, token, fm, to)
             """
             key = exchange + "|" + str(token)
@@ -89,13 +88,17 @@ class Jsondb:
 
     @classmethod
     def get_quotes(cls):
-        quote = {}
-        logging.debug("waiting for ltps")
-        ltps = cls.ws.ltp
-        quote = {
-            symbol: ltps.get(values["key"]) for symbol, values in cls.subscribed.items()
-        }
-        return quote
+        try:
+            quote = {}
+            ltps = cls.ws.ltp
+            quote = {
+                symbol: ltps.get(values["key"])
+                for symbol, values in cls.subscribed.items()
+            }
+        except Exception as e:
+            print(f"{e} while getting quote")
+        finally:
+            return quote
 
 
 def create_strategy():
@@ -116,9 +119,9 @@ def create_strategy():
 def init():
     try:
         logging.info("HAPPY TRADING")
-        strategies = []
         Jsondb.startup()
         while not is_time_past(O_SETG["trade"]["stop"]):
+            strategies = []
             logging.debug("READ strategies from file")
             list_of_attribs: list = O_FUTL.read_file(Jsondb.F_ORDERS)
             for attribs in list_of_attribs:
@@ -133,19 +136,20 @@ def init():
             write_job = []
             for strgy in strategies:
                 ltps = Jsondb.get_quotes()
-                logging.debug(f"RUNNING {strgy._id}")
+                logging.info(f"RUNNING {strgy._fn} for {strgy._id}")
                 completed_buy_order_id = strgy.run(Jsondb.orders_from_api, ltps)
+                obj_dict = strgy.__dict__
+                obj_dict.pop("_orders")
+                pprint(obj_dict)
+                timer(1)
                 if completed_buy_order_id:
                     Jsondb.completed_orders.append(completed_buy_order_id)
                 else:
-                    obj_dict = strgy.__dict__
-                    obj_dict.pop("_orders")
-                    pprint(obj_dict)
-                    timer(0.25)
                     write_job.append(obj_dict)
+
             if any(write_job):
                 O_FUTL.write_file(Jsondb.F_ORDERS, write_job)
-            timer(0.25)
+            timer(1)
         else:
             kill_tmux()
     except KeyboardInterrupt:

@@ -56,6 +56,7 @@ class Helper:
     @classmethod
     def orders(cls):
         try:
+            orders_from_api = []  # Return an empty list on failure
             keys = [
                 "symbol",
                 "quantity",
@@ -82,10 +83,10 @@ class Helper:
                 ]
 
         except Exception as e:
-            print(f"Error fetching orders: {e}")
-            orders_from_api = []  # Return an empty list on failure
-
-        return orders_from_api
+            send_messages(f"Error fetching orders: {e}")
+            print_exc()
+        finally:
+            return orders_from_api
 
     @classmethod
     def close_positions(cls):
@@ -150,6 +151,10 @@ class Helper:
 
 
 if __name__ == "__main__":
+    from pprint import pprint
+    import pandas as pd
+
     Helper.api
-    resp = Helper._api.finvasia.get_order_book()
-    print(resp)
+    resp = Helper.orders()
+    pprint(resp)
+    pd.DataFrame(resp).to_csv("orders.csv", index=False)

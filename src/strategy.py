@@ -5,7 +5,7 @@
     Multiple trades will be triggered and to be tracked separetely.
 """
 
-from constants import logging
+from constants import logging, O_SETG
 from helper import Helper
 from traceback import print_exc
 
@@ -21,7 +21,7 @@ class Strategy:
             self._average_price = float(buy_order["average_price"])
             self._low = float(symbol_info["low"])
             self._ltp = symbol_info["ltp"]
-            self._target = 2
+            self._target = O_SETG["trade"]["target"]
             self._sell_order = ""
             self._orders = []
             self._fn = "set_target"
@@ -34,6 +34,8 @@ class Strategy:
                 self._target = min(target_virtual, self._low)
             else:
                 self._target = target_virtual
+
+            self._target = round(self._target / 0.05) * 0.05
             self._fn = "place_sell_order"
         except Exception as e:
             print_exc()
