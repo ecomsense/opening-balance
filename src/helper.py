@@ -164,8 +164,19 @@ if __name__ == "__main__":
     from pprint import pprint
     import pandas as pd
     from constants import S_DATA
+    import pendulum as pdlm
 
     Helper.api
     resp = Helper.orders()
     pprint(resp)
     pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)
+
+    def history(exchange, symbol):
+        token = Helper.api.instrument_symbol(exchange, symbol)
+        fm = pdlm.now().replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
+        to = pdlm.now().replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+        resp = Helper.api.historical(exchange, token, fm, to)
+        pprint(resp)
+        print(resp[-2]["intl"])
+
+    history("NFO", "NIFTY21NOV24P23500")

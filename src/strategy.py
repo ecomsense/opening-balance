@@ -20,7 +20,7 @@ class Strategy:
             self._symbol = buy_order["symbol"]
             self._average_price = float(buy_order["average_price"])
             self._low = float(symbol_info["low"])
-            self._ltp = symbol_info["ltp"]
+            self._ltp = float(symbol_info["ltp"])
             self._target = O_SETG["trade"]["target"]
             self._stop = float(symbol_info["low"])
             self._sell_order = ""
@@ -91,6 +91,7 @@ class Strategy:
                 )
                 resp = Helper.modify_order(args)
                 logging.debug(resp)
+                return self._id
 
         except Exception as e:
             print(f"{e} while exit order")
@@ -99,7 +100,9 @@ class Strategy:
     def run(self, orders, ltps):
         try:
             self._orders = orders
-            self._ltp = ltps.get(self._symbol, None)
+            ltp = ltps.get(self._symbol, None)
+            if ltp is not None:
+                self._ltp = float(ltp)
             getattr(self, self._fn)()
         except Exception as e:
             print(f"{e} in run for buy order {self._id}")

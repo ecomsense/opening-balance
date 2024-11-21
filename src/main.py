@@ -5,6 +5,7 @@ from toolkit.kokoo import is_time_past, kill_tmux, timer
 from traceback import print_exc
 from wserver import Wserver
 from pprint import pprint
+import pendulum as pdlm
 
 
 class Jsondb:
@@ -71,17 +72,15 @@ class Jsondb:
     def symbol_info(cls, exchange, symbol):
         if cls.subscribed.get(symbol, None) is None:
             token = Helper.api.instrument_symbol(exchange, symbol)
-            """
             now = pdlm.now()
-            fm = now.replace(hour=9, minute=15, second=0, microsecond=0).timestamp()
-            to = now.().timestamp()
+            fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
+            fm = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
             resp = Helper.api.historical(exchange, token, fm, to)
-            """
             key = exchange + "|" + str(token)
             cls.subscribed[symbol] = {
                 "key": key,
-                "low": 0,
-                # "low": resp[1]["intl"],
+                # "low": 0,
+                "low": resp[-2]["intl"],
                 "ltp": cls.subscribe_till_ltp(key),
             }
             return cls.subscribed[symbol]
