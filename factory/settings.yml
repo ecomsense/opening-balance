@@ -1,3 +1,6 @@
 log:
-  show: True
-  level: 10
+  show: 1
+  level: 20
+trade:
+  target: 2
+  stop: "23:50"

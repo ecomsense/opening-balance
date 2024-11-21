@@ -32,7 +32,7 @@ class Helper:
     @classmethod
     def ltp(cls, exchange, token):
         try:
-            resp = cls._api.scriptinfo(exchange, token)
+            resp = cls.api.scriptinfo(exchange, token)
             if resp is not None:
                 return float(resp["lp"])
             else:
@@ -45,11 +45,21 @@ class Helper:
     @classmethod
     def one_side(cls, bargs):
         try:
-            sl1 = cls._api.order_place(**bargs)
+            sl1 = cls.api.order_place(**bargs)
             return sl1
 
         except Exception as e:
             message = f"helper error {e} while placing order"
+            send_messages(message)
+            print_exc()
+
+    @classmethod
+    def modify_order(cls, args):
+        try:
+            resp = cls.api.order_modify(**args)
+            return resp
+        except Exception as e:
+            message = f"helper error {e} while modifying order"
             send_messages(message)
             print_exc()
 
@@ -90,7 +100,7 @@ class Helper:
 
     @classmethod
     def close_positions(cls):
-        for pos in cls._api.positions:
+        for pos in cls.api.positions:
             if pos["quantity"] == 0:
                 continue
             else:
@@ -108,7 +118,7 @@ class Helper:
                     exchange="NFO",
                     tag="close",
                 )
-                resp = cls._api.order_place(**args)
+                resp = cls.api.order_place(**args)
                 send_messages(f"api responded with {resp}")
             elif quantity > 0:
                 args = dict(
@@ -121,7 +131,7 @@ class Helper:
                     exchange="NFO",
                     tag="close",
                 )
-                resp = cls._api.order_place(**args)
+                resp = cls.api.order_place(**args)
                 send_messages(f"api responded with {resp}")
 
     @classmethod
@@ -129,7 +139,7 @@ class Helper:
         try:
             pnl = 0
             positions = [{}]
-            positions = cls._api.positions
+            positions = cls.api.positions
             """
             keys = [
                 "symbol",
@@ -153,8 +163,9 @@ class Helper:
 if __name__ == "__main__":
     from pprint import pprint
     import pandas as pd
+    from constants import S_DATA
 
     Helper.api
     resp = Helper.orders()
     pprint(resp)
-    pd.DataFrame(resp).to_csv("orders.csv", index=False)
+    pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)

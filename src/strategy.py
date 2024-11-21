@@ -22,6 +22,7 @@ class Strategy:
             self._low = float(symbol_info["low"])
             self._ltp = symbol_info["ltp"]
             self._target = O_SETG["trade"]["target"]
+            self._stop = float(symbol_info["low"])
             self._sell_order = ""
             self._orders = []
             self._fn = "set_target"
@@ -32,6 +33,7 @@ class Strategy:
             target_virtual = self._average_price + target_buffer
             if self._average_price < self._low:
                 self._target = min(target_virtual, self._low)
+                self._stop = 0.00
             else:
                 self._target = target_virtual
 
@@ -75,10 +77,21 @@ class Strategy:
             order = self._get_order_from_book(self._sell_order)
             if order["status"].upper() == "COMPLETE":
                 logging.info(
-                    f"{self._symbol} target {self._sell_order} "
-                    + f"status is {order['status']}"
+                    f"{self._symbol} target order {self._sell_order} is reached"
                 )
                 return self._id
+            elif self._ltp < self._stop:
+                args = dict(
+                    tradingsymbol=order["symbol"],
+                    order_id=order["order_id"],
+                    exchange=order["exchange"],
+                    newquantity=order["quantity"],
+                    newprice_type="MKT",
+                    newprice=0.00,
+                )
+                resp = Helper.modify_order(args)
+                logging.debug(resp)
+
         except Exception as e:
             print(f"{e} while exit order")
             print_exc()
@@ -89,5 +102,5 @@ class Strategy:
             self._ltp = ltps.get(self._symbol, None)
             getattr(self, self._fn)()
         except Exception as e:
-            print(f"{e} in run")
+            print(f"{e} in run for buy order {self._id}")
             print_exc()
