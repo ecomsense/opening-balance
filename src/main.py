@@ -14,49 +14,20 @@ class Jsondb:
     completed_orders = []
     orders_from_api = []
     subscribed = {}
+    now = pdlm.now("Asia/Kolkata")
 
     @classmethod
     def startup(cls):
         if O_FUTL.is_file_not_2day(cls.F_ORDERS):
             # return empty list if file is not modified today
             O_FUTL.write_file(filepath=cls.F_ORDERS, content=[])
+        else:
+            O_FUTL.write_file(filepath=cls.F_ORDERS, content=[])
+
         cls.ws = Wserver(Helper.api, ["NSE:24"])
 
     @classmethod
-    def read_buy_order_ids(cls):
-        order_from_file = O_FUTL.json_fm_file(cls.F_ORDERS)
-        """ extract key from list of dictionary """
-        ids = []
-        if order_from_file and any(order_from_file):
-            ids = [order["_id"] for order in order_from_file]
-            logging.debug(ids)
-        return ids
-
-    @classmethod
-    def get_one(cls):
-        try:
-            ids = cls.read_buy_order_ids()
-
-            new_orders = []
-            cls.orders_from_api = Helper.orders()
-            if cls.orders_from_api and any(cls.orders_from_api):
-                """convert list to dict with order id as key"""
-                new_orders = [
-                    {"id": order["order_id"], "buy_order": order}
-                    for order in cls.orders_from_api
-                    if order["side"] == "B"
-                    and order["status"] == "COMPLETE"
-                    and order["order_id"] not in ids
-                    and order["order_id"] not in cls.completed_orders.copy()
-                ]
-        except Exception as e:
-            print(f"{e} while get one order")
-            print_exc()
-        finally:
-            return new_orders
-
-    @classmethod
-    def subscribe_till_ltp(cls, ws_key):
+    def _subscribe_till_ltp(cls, ws_key):
         try:
             ltp = None
             while ltp is None:
@@ -65,7 +36,7 @@ class Jsondb:
                 quotes = cls.ws.ltp
                 ltp = quotes.get(ws_key, None)
         except Exception as e:
-            print(f"{e} while get ltp")
+            logging.error(f"{e} while get ltp")
         return ltp
 
     @classmethod
@@ -74,15 +45,16 @@ class Jsondb:
             token = Helper.api.instrument_symbol(exchange, symbol)
             now = pdlm.now()
             fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
-            fm = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+            to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
             resp = Helper.api.historical(exchange, token, fm, to)
             key = exchange + "|" + str(token)
             cls.subscribed[symbol] = {
                 "key": key,
                 # "low": 0,
                 "low": resp[-2]["intl"],
-                "ltp": cls.subscribe_till_ltp(key),
+                "ltp": cls._subscribe_till_ltp(key),
             }
+        if cls.subscribed.get(symbol, None):
             return cls.subscribed[symbol]
 
     @classmethod
@@ -95,24 +67,77 @@ class Jsondb:
                 for symbol, values in cls.subscribed.items()
             }
         except Exception as e:
-            print(f"{e} while getting quote")
+            logging.error(f"{e} while getting quote")
         finally:
             return quote
 
+    @classmethod
+    def get_one(cls):
+        try:
+            new_orders = []
+            order_from_file = O_FUTL.json_fm_file(cls.F_ORDERS)
+            ids = read_buy_order_ids(order_from_file)
+            cls.orders_from_api = Helper.orders()
+            if cls.orders_from_api and any(cls.orders_from_api):
+                """convert list to dict with order id as key"""
+                new_orders = [
+                    {"id": order["order_id"], "buy_order": order}
+                    for order in cls.orders_from_api
+                    if order["side"] == "B"
+                    and order["status"] == "COMPLETE"
+                    and order["order_id"] not in ids
+                    and order["order_id"] not in cls.completed_orders.copy()
+                    and pdlm.parse(order["broker_timestamp"]) > cls.now
+                ]
+        except Exception as e:
+            logging.error(f"{e} while get one order")
+            print_exc()
+        finally:
+            return new_orders
+
+
+def read_buy_order_ids(order_from_file):
+    """extract key from list of dictionary"""
+    ids = []
+    if order_from_file and any(order_from_file):
+        ids = [order["_id"] for order in order_from_file]
+        logging.debug(ids)
+    return ids
+
+
+def read_from_file():
+    try:
+        strategies = []
+        logging.debug("READ strategies from file")
+        list_of_attribs: list = O_FUTL.json_fm_file(Jsondb.F_ORDERS)
+        for attribs in list_of_attribs:
+            strgy = Strategy(attribs, "", {}, {})
+            strategies.append(strgy)
+        return strategies
+    except Exception as e:
+        logging.error(f"{e} while read_from_file")
+        print_exc()
+
 
 def create_strategy():
-    strgy = None
-    info = None
-    list_of_orders = Jsondb.get_one()
-    if any(list_of_orders):
-        order_item = list_of_orders[0]
-        if any(order_item):
-            b = order_item["buy_order"]
-            info = Jsondb.symbol_info(b["exchange"], b["symbol"])
-            if info:
-                logging.debug("creating new strategy")
-                strgy = Strategy({}, order_item["id"], order_item["buy_order"], info)
-    return strgy
+    try:
+        strgy = None
+        info = None
+        list_of_orders = Jsondb.get_one()
+        if any(list_of_orders):
+            order_item = list_of_orders[0]
+            if any(order_item):
+                b = order_item["buy_order"]
+                info = Jsondb.symbol_info(b["exchange"], b["symbol"])
+                if info:
+                    logging.info(f"CREATE new strategy {order_item['id']}")
+                    strgy = Strategy(
+                        {}, order_item["id"], order_item["buy_order"], info
+                    )
+        return strgy
+    except Exception as e:
+        logging.error(f"{e} while creating strategy")
+        print_exc()
 
 
 def init():
@@ -120,14 +145,8 @@ def init():
         logging.info("HAPPY TRADING")
         Jsondb.startup()
         while not is_time_past(O_SETG["trade"]["stop"]):
-            strategies = []
-            logging.debug("READ strategies from file")
-            list_of_attribs: list = O_FUTL.read_file(Jsondb.F_ORDERS)
-            for attribs in list_of_attribs:
-                strgy = Strategy(attribs, "", {}, {})
-                strategies.append(strgy)
+            strategies = read_from_file()
 
-            logging.debug("CREATE strategy from orderbook")
             strgy = create_strategy()
             if strgy:
                 strategies.append(strgy)  # add to list of strgy
@@ -139,7 +158,7 @@ def init():
                 completed_buy_order_id = strgy.run(Jsondb.orders_from_api, ltps)
                 obj_dict = strgy.__dict__
                 obj_dict.pop("_orders")
-                pprint(obj_dict)
+                # pprint(obj_dict)
                 timer(1)
                 if completed_buy_order_id:
                     Jsondb.completed_orders.append(completed_buy_order_id)
