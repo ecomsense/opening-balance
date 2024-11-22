@@ -9,7 +9,6 @@ import pendulum as pdlm
 
 
 class Jsondb:
-
     F_ORDERS = S_DATA + "orders.json"
     completed_orders = []
     orders_from_api = []
@@ -18,44 +17,53 @@ class Jsondb:
 
     @classmethod
     def startup(cls):
-        if O_FUTL.is_file_not_2day(cls.F_ORDERS):
-            # return empty list if file is not modified today
-            O_FUTL.write_file(filepath=cls.F_ORDERS, content=[])
-        else:
-            O_FUTL.write_file(filepath=cls.F_ORDERS, content=[])
+        try:
+            if O_FUTL.is_file_not_2day(cls.F_ORDERS):
+                # return empty list if file is not modified today
+                O_FUTL.write_file(filepath=cls.F_ORDERS, content=[])
+            else:
+                O_FUTL.write_file(filepath=cls.F_ORDERS, content=[])
 
-        cls.ws = Wserver(Helper.api, ["NSE:24"])
+            cls.ws = Wserver(Helper.api, ["NSE:24"])
+        except Exception as e:
+            logging.error(f"{e} while startup")
+            print_exc()
 
     @classmethod
     def _subscribe_till_ltp(cls, ws_key):
         try:
             ltp = None
+            logging.debug("subscribing")
             while ltp is None:
-                logging.debug("subscribing")
                 cls.ws.api.subscribe([ws_key], feed_type="d")
                 quotes = cls.ws.ltp
                 ltp = quotes.get(ws_key, None)
         except Exception as e:
             logging.error(f"{e} while get ltp")
+            print_exc()
         return ltp
 
     @classmethod
     def symbol_info(cls, exchange, symbol):
-        if cls.subscribed.get(symbol, None) is None:
-            token = Helper.api.instrument_symbol(exchange, symbol)
-            now = pdlm.now()
-            fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
-            to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
-            resp = Helper.api.historical(exchange, token, fm, to)
-            key = exchange + "|" + str(token)
-            cls.subscribed[symbol] = {
-                "key": key,
-                # "low": 0,
-                "low": resp[-2]["intl"],
-                "ltp": cls._subscribe_till_ltp(key),
-            }
-        if cls.subscribed.get(symbol, None):
-            return cls.subscribed[symbol]
+        try:
+            if cls.subscribed.get(symbol, None) is None:
+                token = Helper.api.instrument_symbol(exchange, symbol)
+                now = pdlm.now()
+                fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
+                to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+                resp = Helper.api.historical(exchange, token, fm, to)
+                key = exchange + "|" + str(token)
+                cls.subscribed[symbol] = {
+                    "key": key,
+                    # "low": 0,
+                    "low": resp[-2]["intl"],
+                    "ltp": cls._subscribe_till_ltp(key),
+                }
+            if cls.subscribed.get(symbol, None):
+                return cls.subscribed[symbol]
+        except Exception as e:
+            logging.error(f"{e} while symbol info")
+            print_exc()
 
     @classmethod
     def get_quotes(cls):
@@ -68,6 +76,7 @@ class Jsondb:
             }
         except Exception as e:
             logging.error(f"{e} while getting quote")
+            print_exc()
         finally:
             return quote
 
@@ -97,12 +106,16 @@ class Jsondb:
 
 
 def read_buy_order_ids(order_from_file):
-    """extract key from list of dictionary"""
-    ids = []
-    if order_from_file and any(order_from_file):
-        ids = [order["_id"] for order in order_from_file]
-        logging.debug(ids)
-    return ids
+    try:
+        ids = []
+        if order_from_file and any(order_from_file):
+            ids = [order["_id"] for order in order_from_file]
+            logging.debug(ids)
+    except Exception as e:
+        logging.error(f"{e} while read_buy_order_ids")
+        print_exc()
+    finally:
+        return ids
 
 
 def read_from_file():
@@ -158,7 +171,7 @@ def init():
                 completed_buy_order_id = strgy.run(Jsondb.orders_from_api, ltps)
                 obj_dict = strgy.__dict__
                 obj_dict.pop("_orders")
-                # pprint(obj_dict)
+                pprint(obj_dict)
                 timer(1)
                 if completed_buy_order_id:
                     Jsondb.completed_orders.append(completed_buy_order_id)
@@ -174,7 +187,7 @@ def init():
         __import__("sys").exit()
     except Exception as e:
         print_exc()
-        logging.error(f"{e} while running strategy")
+        logging.error(f"{e} while init")
 
 
 init()
