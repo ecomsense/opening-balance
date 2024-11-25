@@ -25,10 +25,9 @@ class Wserver:
 
     # application callbacks
     def event_handler_order_update(self, message):
-        logging.debug("order event: " + str(message))
+        pass
 
     def event_handler_quote_update(self, message):
-        logging.debug(f"quote {message}")
         val = message.get("lp", False)
         if val:
             self.ltp[message["e"] + "|" + message["tk"]] = val

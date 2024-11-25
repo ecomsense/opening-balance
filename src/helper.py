@@ -66,7 +66,7 @@ class Helper:
     @classmethod
     def orders(cls):
         try:
-            orders_from_api = []  # Return an empty list on failure
+            from_api = []  # Return an empty list on failure
             keys = [
                 "symbol",
                 "quantity",
@@ -83,20 +83,54 @@ class Helper:
                 "broker_timestamp",
                 "status",
                 "product",
+                "price_type",
             ]
-            orders_from_api = cls.api.orders
-            if orders_from_api:
+            from_api = cls.api.orders
+            if from_api:
                 # Apply filter to each order item
-                orders_from_api = [
-                    filter_dictionary_by_keys(order_item, keys)
-                    for order_item in orders_from_api
-                ]
+                from_api = [filter_dictionary_by_keys(item, keys) for item in from_api]
 
         except Exception as e:
             send_messages(f"Error fetching orders: {e}")
             print_exc()
         finally:
-            return orders_from_api
+            return from_api
+
+    @classmethod
+    def trades(cls):
+        try:
+            from_api = []  # Return an empty list on failure
+            keys = [
+                "exchange",
+                "symbol",
+                "order_id",
+                "quantity",
+                "side",
+                "product",
+                "price_type",
+                "fill_shares",
+                "average_price",
+                "exchange_order_id",
+                "tag",
+                "validity",
+                "price_precison",
+                "tick_size",
+                "fill_timestamp",
+                "fill_quantity",
+                "fill_price",
+                "source",
+                "broker_timestamp",
+            ]
+            from_api = cls.api.trades
+            if from_api:
+                # Apply filter to each order item
+                from_api = [filter_dictionary_by_keys(item, keys) for item in from_api]
+
+        except Exception as e:
+            send_messages(f"Error fetching orders: {e}")
+            print_exc()
+        finally:
+            return from_api
 
     @classmethod
     def close_positions(cls):
@@ -156,6 +190,7 @@ class Helper:
         except Exception as e:
             message = f"while calculating {e}"
             send_messages(f"api responded with {message}")
+            print_exc()
         finally:
             return pnl
 
@@ -167,9 +202,9 @@ if __name__ == "__main__":
     import pendulum as pdlm
 
     Helper.api
-    resp = Helper.orders()
+    resp = Helper.trades()
     pprint(resp)
-    pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)
+    pd.DataFrame(resp).to_csv(S_DATA + "trades.csv", index=False)
 
     def history(exchange, symbol):
         token = Helper.api.instrument_symbol(exchange, symbol)
@@ -179,4 +214,14 @@ if __name__ == "__main__":
         pprint(resp)
         print(resp[-2]["intl"])
 
-    history("NFO", "NIFTY21NOV24P23500")
+    def modify():
+        args = {
+            "symbol": "NIFTY28NOV24C23400",
+            "exchange": "NFO",
+            "order_id": "24112200115699",
+            "price": 0.0,
+            "price_type": "MARKET",
+            "quantity": 25,
+        }
+        resp = Helper.modify_order(args)
+        print(resp)

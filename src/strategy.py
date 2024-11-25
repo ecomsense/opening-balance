@@ -18,7 +18,7 @@ class Strategy:
             self._id = id
             self._buy_order = buy_order
             self._symbol = buy_order["symbol"]
-            self._average_price = float(buy_order["average_price"])
+            self._fill_price = float(buy_order["fill_price"])
             self._low = float(symbol_info["low"])
             self._ltp = float(symbol_info["ltp"])
             self._target = O_SETG["trade"]["target"]
@@ -29,9 +29,9 @@ class Strategy:
 
     def set_target(self):
         try:
-            target_buffer = self._target * self._average_price / 100
-            target_virtual = self._average_price + target_buffer
-            if self._average_price < self._low:
+            target_buffer = self._target * self._fill_price / 100
+            target_virtual = self._fill_price + target_buffer
+            if self._fill_price < self._low:
                 self._target = min(target_virtual, self._low)
                 self._stop = 0.00
             else:
@@ -42,6 +42,16 @@ class Strategy:
         except Exception as e:
             print_exc()
             print(f"{e} while set target")
+
+    def is_id_in_list(self, order_id):
+        try:
+            for order in self._orders:
+                if order_id == order["order_id"]:
+                    return True
+            return False
+        except Exception as e:
+            logging.error(f"{e} get order from book")
+            print_exc()
 
     def place_sell_order(self):
         try:
@@ -59,42 +69,37 @@ class Strategy:
             logging.debug(sargs)
             self._sell_order = Helper.one_side(sargs)
             if self._sell_order is None:
-                raise f"unable to get order number for {self._buy_order}. please manage"
+                raise RuntimeError(
+                    f"unable to get order number for {self._buy_order}. please manage"
+                )
             else:
                 self._fn = "exit_order"
         except Exception as e:
-            print(e)
+            logging.error(f"{e} whle place sell order")
             print_exc()
-
-    def _get_order_from_book(self, order_id):
-        for order in self._orders:
-            if order_id == order["order_id"]:
-                return order
-        return {}
 
     def exit_order(self):
         try:
-            order = self._get_order_from_book(self._sell_order)
-            if order["status"].upper() == "COMPLETE":
+            if self.is_id_in_list(self._sell_order):
                 logging.info(
                     f"{self._symbol} target order {self._sell_order} is reached"
                 )
                 return self._id
             elif self._ltp < self._stop:
                 args = dict(
-                    tradingsymbol=order["symbol"],
-                    order_id=order["order_id"],
-                    exchange=order["exchange"],
-                    newquantity=order["quantity"],
-                    newprice_type="MKT",
-                    newprice=0.00,
+                    symbol=self._symbol,
+                    order_id=self._sell_order,
+                    exchange=self._buy_order["exchange"],
+                    quantity=abs(int(self._buy_order["quantity"])),
+                    price_type="MARKET",
+                    price=0.00,
                 )
                 resp = Helper.modify_order(args)
-                logging.debug(resp)
+                logging.debug(f"order id: {args['order_id']} {resp}")
                 return self._id
 
         except Exception as e:
-            print(f"{e} while exit order")
+            logging.error(f"{e} while exit order")
             print_exc()
 
     def run(self, orders, ltps):
@@ -105,5 +110,5 @@ class Strategy:
                 self._ltp = float(ltp)
             getattr(self, self._fn)()
         except Exception as e:
-            print(f"{e} in run for buy order {self._id}")
+            logging.error(f"{e} in run for buy order {self._id}")
             print_exc()

@@ -10,8 +10,8 @@ import pendulum as pdlm
 
 class Jsondb:
     F_ORDERS = S_DATA + "orders.json"
-    completed_orders = []
-    orders_from_api = []
+    completed_trades = []
+    trades_from_api = []
     subscribed = {}
     now = pdlm.now("Asia/Kolkata")
 
@@ -83,26 +83,25 @@ class Jsondb:
     @classmethod
     def get_one(cls):
         try:
-            new_orders = []
+            new = []
             order_from_file = O_FUTL.json_fm_file(cls.F_ORDERS)
             ids = read_buy_order_ids(order_from_file)
-            cls.orders_from_api = Helper.orders()
-            if cls.orders_from_api and any(cls.orders_from_api):
+            cls.trades_from_api = Helper.trades()
+            if cls.trades_from_api and any(cls.trades_from_api):
                 """convert list to dict with order id as key"""
-                new_orders = [
+                new = [
                     {"id": order["order_id"], "buy_order": order}
-                    for order in cls.orders_from_api
+                    for order in cls.trades_from_api
                     if order["side"] == "B"
-                    and order["status"] == "COMPLETE"
                     and order["order_id"] not in ids
-                    and order["order_id"] not in cls.completed_orders.copy()
+                    and order["order_id"] not in cls.completed_trades.copy()
                     and pdlm.parse(order["broker_timestamp"]) > cls.now
                 ]
         except Exception as e:
             logging.error(f"{e} while get one order")
             print_exc()
         finally:
-            return new_orders
+            return new
 
 
 def read_buy_order_ids(order_from_file):
@@ -168,13 +167,13 @@ def init():
             for strgy in strategies:
                 ltps = Jsondb.get_quotes()
                 logging.info(f"RUNNING {strgy._fn} for {strgy._id}")
-                completed_buy_order_id = strgy.run(Jsondb.orders_from_api, ltps)
+                completed_buy_order_id = strgy.run(Jsondb.trades_from_api, ltps)
                 obj_dict = strgy.__dict__
                 obj_dict.pop("_orders")
                 pprint(obj_dict)
                 timer(1)
                 if completed_buy_order_id:
-                    Jsondb.completed_orders.append(completed_buy_order_id)
+                    Jsondb.completed_trades.append(completed_buy_order_id)
                 else:
                     write_job.append(obj_dict)
 
