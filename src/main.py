@@ -32,16 +32,18 @@ class Jsondb:
     @classmethod
     def _subscribe_till_ltp(cls, ws_key):
         try:
-            ltp = None
-            logging.debug("subscribing")
+            quotes = cls.ws.ltp
+            ltp = quotes.get(ws_key, None)
             while ltp is None:
                 cls.ws.api.subscribe([ws_key], feed_type="d")
                 quotes = cls.ws.ltp
                 ltp = quotes.get(ws_key, None)
+                timer(0.25)
+            return ltp
         except Exception as e:
             logging.error(f"{e} while get ltp")
             print_exc()
-        return ltp
+            cls._subscribe_till_ltp(ws_key)
 
     @classmethod
     def symbol_info(cls, exchange, symbol):
@@ -59,7 +61,9 @@ class Jsondb:
                     "low": resp[-2]["intl"],
                     "ltp": cls._subscribe_till_ltp(key),
                 }
-            if cls.subscribed.get(symbol, None):
+            if cls.subscribed.get(symbol, None) is not None:
+                if cls.subscribed[symbol]["ltp"] is None:
+                    raise ValueError("Ltp cannot be None")
                 return cls.subscribed[symbol]
         except Exception as e:
             logging.error(f"{e} while symbol info")
