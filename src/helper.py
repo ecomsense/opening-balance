@@ -1,5 +1,9 @@
 from traceback import print_exc
 from stock_brokers.finvasia.finvasia import Finvasia
+from stock_brokers.finvasia.api_helper import (
+    make_order_modify_args,
+    make_order_place_args,
+)
 from toolkit.datastruct import filter_dictionary_by_keys
 from constants import O_CNFG
 
@@ -45,9 +49,9 @@ class Helper:
     @classmethod
     def one_side(cls, bargs):
         try:
-            sl1 = cls.api.order_place(**bargs)
-            return sl1
-
+            bargs = make_order_place_args(**bargs)
+            resp = cls.api.order_place(**bargs)
+            return resp
         except Exception as e:
             message = f"helper error {e} while placing order"
             send_messages(message)
@@ -56,6 +60,7 @@ class Helper:
     @classmethod
     def modify_order(cls, args):
         try:
+            args = make_order_modify_args(**args)
             resp = cls.api.order_modify(**args)
             return resp
         except Exception as e:
@@ -66,35 +71,10 @@ class Helper:
     @classmethod
     def orders(cls):
         try:
-            from_api = []  # Return an empty list on failure
-            keys = [
-                "symbol",
-                "quantity",
-                "side",
-                "validity",
-                "price",
-                "trigger_price",
-                "average_price",
-                "filled_quantity",
-                "order_id",
-                "exchange",
-                "exchange_order_id",
-                "disclosed_quantity",
-                "broker_timestamp",
-                "status",
-                "product",
-                "price_type",
-            ]
-            from_api = cls.api.orders
-            if from_api:
-                # Apply filter to each order item
-                from_api = [filter_dictionary_by_keys(item, keys) for item in from_api]
-
+            return cls.api.orders
         except Exception as e:
             send_messages(f"Error fetching orders: {e}")
             print_exc()
-        finally:
-            return from_api
 
     @classmethod
     def trades(cls):
@@ -169,9 +149,9 @@ class Helper:
                 send_messages(f"api responded with {resp}")
 
     @classmethod
-    def mtm(cls):
+    def pnl(cls, key="urmtom"):
         try:
-            pnl = 0
+            ttl = 0
             positions = [{}]
             positions = cls.api.positions
             """
@@ -186,13 +166,13 @@ class Helper:
             if any(positions):
                 # calc value
                 for pos in positions:
-                    pnl += pos["urmtom"]
+                    ttl += pos[key]
         except Exception as e:
             message = f"while calculating {e}"
             send_messages(f"api responded with {message}")
             print_exc()
         finally:
-            return pnl
+            return ttl
 
 
 if __name__ == "__main__":
@@ -225,3 +205,12 @@ if __name__ == "__main__":
         }
         resp = Helper.modify_order(args)
         print(resp)
+
+    resp = Helper.pnl("rpnl")
+    print(resp)
+
+    def margin():
+        resp = Helper.api.margins
+        print(resp)
+
+    margin()
