@@ -8,7 +8,7 @@ class Wserver:
     ltp = {}
 
     def __init__(self, broker, tokens):
-        self.api = broker.finvasia
+        self.api = broker.broker
         self.tokens = tokens
         ret = self.api.start_websocket(
             order_update_callback=self.event_handler_order_update,

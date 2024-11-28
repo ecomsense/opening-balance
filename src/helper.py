@@ -3,6 +3,7 @@ from stock_brokers.finvasia.finvasia import Finvasia
 from stock_brokers.finvasia.api_helper import (
     make_order_modify_args,
     make_order_place_args,
+    post_order_hook,
 )
 from toolkit.datastruct import filter_dictionary_by_keys
 from constants import O_CNFG
@@ -71,7 +72,12 @@ class Helper:
     @classmethod
     def orders(cls):
         try:
-            return cls.api.orders
+            orders = cls.api.orders
+            if any(orders):
+                # print(orders[0].keys())
+                return post_order_hook(*orders)
+            return [{}]
+
         except Exception as e:
             send_messages(f"Error fetching orders: {e}")
             print_exc()
@@ -182,9 +188,16 @@ if __name__ == "__main__":
     import pendulum as pdlm
 
     Helper.api
-    resp = Helper.trades()
-    pprint(resp)
-    pd.DataFrame(resp).to_csv(S_DATA + "trades.csv", index=False)
+
+    def trades():
+        resp = Helper.trades()
+        pprint(resp)
+        pd.DataFrame(resp).to_csv(S_DATA + "trades.csv", index=False)
+
+    def orders():
+        resp = Helper.orders()
+        pprint(resp)
+        pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)
 
     def history(exchange, symbol):
         token = Helper.api.instrument_symbol(exchange, symbol)
@@ -213,4 +226,5 @@ if __name__ == "__main__":
         resp = Helper.api.margins
         print(resp)
 
+    orders()
     margin()

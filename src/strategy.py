@@ -62,7 +62,7 @@ class Strategy:
                 side="S",
                 price=self._target,
                 trigger_price=0,
-                price_type="LMT",
+                order_type="LMT",
                 exchange=self._buy_order["exchange"],
                 tag="exit",
             )
