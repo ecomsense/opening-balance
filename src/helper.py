@@ -113,7 +113,7 @@ class Helper:
                 from_api = [filter_dictionary_by_keys(item, keys) for item in from_api]
 
         except Exception as e:
-            send_messages(f"Error fetching orders: {e}")
+            send_messages(f"Error fetching trades: {e}")
             print_exc()
         finally:
             return from_api
@@ -158,8 +158,8 @@ class Helper:
     def pnl(cls, key="urmtom"):
         try:
             ttl = 0
-            positions = [{}]
-            positions = cls.api.positions
+            resp = [{}]
+            resp = cls.api.positions
             """
             keys = [
                 "symbol",
@@ -169,9 +169,10 @@ class Helper:
                 "rpnl",
             ]
             """
-            if any(positions):
+            if any(resp):
+                pd.DataFrame(resp).to_csv(S_DATA + "positions.csv", index=False)
                 # calc value
-                for pos in positions:
+                for pos in resp:
                     ttl += pos[key]
         except Exception as e:
             message = f"while calculating {e}"
@@ -196,8 +197,8 @@ if __name__ == "__main__":
 
     def orders():
         resp = Helper.orders()
-        pprint(resp)
-        pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)
+        if any(resp):
+            pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)
 
     def history(exchange, symbol):
         token = Helper.api.instrument_symbol(exchange, symbol)
@@ -227,4 +228,5 @@ if __name__ == "__main__":
         print(resp)
 
     orders()
+    trades()
     margin()
