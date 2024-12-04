@@ -43,12 +43,14 @@ class Strategy:
             print_exc()
             print(f"{e} while set target")
 
-    def is_id_in_list(self, order_id):
+    def _is_target_reached(self):
         try:
             for order in self._orders:
-                if order_id == order["order_id"]:
-                    return True
-            return False
+                if self._sell_order == order["order_id"]:
+                    logging.info(
+                        f"{self._symbol} target order {self._sell_order} is reached"
+                    )
+                    return self._id
         except Exception as e:
             logging.error(f"{e} get order from book")
             print_exc()
@@ -74,18 +76,18 @@ class Strategy:
                 )
             else:
                 self._fn = "exit_order"
+
+            if self._stop == 0:
+                return self._id
+
         except Exception as e:
             logging.error(f"{e} whle place sell order")
             print_exc()
 
     def exit_order(self):
         try:
-            if self.is_id_in_list(self._sell_order):
-                logging.info(
-                    f"{self._symbol} target order {self._sell_order} is reached"
-                )
-                return self._id
-            elif self._ltp < self._stop:
+            self._is_target_reached()
+            if self._ltp < self._stop:
                 args = dict(
                     symbol=self._symbol,
                     order_id=self._sell_order,

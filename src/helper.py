@@ -192,7 +192,6 @@ if __name__ == "__main__":
 
     def trades():
         resp = Helper.trades()
-        pprint(resp)
         pd.DataFrame(resp).to_csv(S_DATA + "trades.csv", index=False)
 
     def orders():
