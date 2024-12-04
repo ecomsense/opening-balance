@@ -62,7 +62,7 @@ class Strategy:
                 side="S",
                 price=self._target,
                 trigger_price=0,
-                order_type="LMT",
+                order_type="LIMIT",
                 exchange=self._buy_order["exchange"],
                 tag="exit",
             )
@@ -91,7 +91,7 @@ class Strategy:
                     order_id=self._sell_order,
                     exchange=self._buy_order["exchange"],
                     quantity=abs(int(self._buy_order["quantity"])),
-                    price_type="MARKET",
+                    order_type="MARKET",
                     price=0.00,
                 )
                 resp = Helper.modify_order(args)
