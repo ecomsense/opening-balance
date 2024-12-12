@@ -1,4 +1,5 @@
 from traceback import print_exc
+import re
 from stock_brokers.finvasia.finvasia import Finvasia
 from stock_brokers.finvasia.api_helper import (
     make_order_modify_args,
@@ -6,7 +7,27 @@ from stock_brokers.finvasia.api_helper import (
     post_order_hook,
 )
 from toolkit.datastruct import filter_dictionary_by_keys
-from constants import O_CNFG
+from constants import O_CNFG, logging, O_SETG
+import pendulum as pdlm
+from toolkit.kokoo import blink, timer
+from wserver import Wserver
+
+
+def find_underlying(symbol):
+    try:
+        for underlying, low in O_SETG["MCX"].items():
+            # starts with any alpha
+            pattern = re.compile(r"[A-Za-z]+")
+            symbol_begin = pattern.match(symbol).group()
+            underlying_begin = pattern.match(underlying).group()
+            # If the symbol begins with the alpha of underlying
+            if symbol_begin.startswith(underlying_begin):
+                return {underlying: low}
+        return None  # Return None if no match is found
+    except Exception as e:
+        print(f"{e} while find underlying regex")
+        print_exc()
+        return None
 
 
 def send_messages(msg):
@@ -24,15 +45,93 @@ def login():
         __import__("sys").exit(1)
 
 
+# add a decorator to check if wait_till is past
+def is_not_rate_limited(func):
+    # Decorator to enforce a 1-second delay between calls
+    def wrapper(*args, **kwargs):
+        now = pdlm.now()
+        if now < Helper.wait_till:
+            blink()
+        Helper.wait_till = now.add(seconds=1)
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 class Helper:
     _api = None
+    subscribed = {}
+    completed_trades = []
 
     @classmethod
     @property
     def api(cls):
         if cls._api is None:
             cls._api = login()
+            cls.ws = Wserver(cls._api, ["NSE:24"])
+        cls.wait_till = pdlm.now().add(seconds=1)
         return cls._api
+
+    @classmethod
+    def _subscribe_till_ltp(cls, ws_key):
+        try:
+            quotes = cls.ws.ltp
+            ltp = quotes.get(ws_key, None)
+            while ltp is None:
+                cls.ws.api.subscribe([ws_key], feed_type="d")
+                quotes = cls.ws.ltp
+                ltp = quotes.get(ws_key, None)
+                timer(0.25)
+            return ltp
+        except Exception as e:
+            logging.error(f"{e} while get ltp")
+            print_exc()
+            cls._subscribe_till_ltp(ws_key)
+
+    @classmethod
+    def symbol_info(cls, exchange, symbol):
+        try:
+            if exchange == "MCX":
+                resp = find_underlying(symbol)
+                if resp:
+                    symbol, low = resp
+            if cls.subscribed.get(symbol, None) is None:
+                token = self.api.instrument_symbol(exchange, symbol)
+                now = pdlm.now()
+                fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
+                to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+                key = exchange + "|" + str(token)
+                if low is None:
+                    resp = self.api.historical(exchange, token, fm, to)
+                    low = resp[-2]["intl"]
+                cls.subscribed[symbol] = {
+                    "key": key,
+                    # "low": 0,
+                    "low": low,
+                    "ltp": cls._subscribe_till_ltp(key),
+                }
+            if cls.subscribed.get(symbol, None) is not None:
+                if cls.subscribed[symbol]["ltp"] is None:
+                    raise ValueError("Ltp cannot be None")
+                return cls.subscribed[symbol]
+        except Exception as e:
+            logging.error(f"{e} while symbol info")
+            print_exc()
+
+    @classmethod
+    def get_quotes(cls):
+        try:
+            quote = {}
+            ltps = cls.ws.ltp
+            quote = {
+                symbol: ltps.get(values["key"])
+                for symbol, values in cls.subscribed.items()
+            }
+        except Exception as e:
+            logging.error(f"{e} while getting quote")
+            print_exc()
+        finally:
+            return quote
 
     @classmethod
     def ltp(cls, exchange, token):
@@ -83,6 +182,7 @@ class Helper:
             print_exc()
 
     @classmethod
+    @is_not_rate_limited
     def trades(cls):
         try:
             from_api = []  # Return an empty list on failure
@@ -219,13 +319,11 @@ if __name__ == "__main__":
         resp = Helper.modify_order(args)
         print(resp)
 
-    resp = Helper.pnl("rpnl")
-    print(resp)
-
     def margin():
         resp = Helper.api.margins
         print(resp)
 
-    orders()
     trades()
     margin()
+    resp = Helper.pnl("rpnl")
+    print(resp)

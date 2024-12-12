@@ -17,12 +17,13 @@ class Strategy:
         else:
             self._id = id
             self._buy_order = buy_order
-            self._symbol = buy_order["symbol"]
+            self._symbol = symbol_info["symbol"]
             self._fill_price = float(buy_order["fill_price"])
             self._low = float(symbol_info["low"])
             self._ltp = float(symbol_info["ltp"])
-            self._target = O_SETG["trade"]["target"]
             self._stop = float(symbol_info["low"])
+            exchange = self._buy_order["exchange"]
+            self._target = O_SETG["targets"][exchange]
             self._sell_order = ""
             self._orders = []
             self._fn = "set_target"
@@ -31,7 +32,7 @@ class Strategy:
         try:
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer
-            if self._fill_price < self._low:
+            if self._ltp < self._low and (self._buy_order["exchange"] != "MCX"):
                 self._target = min(target_virtual, self._low)
                 self._stop = 0.00
             else:
@@ -58,7 +59,7 @@ class Strategy:
     def place_sell_order(self):
         try:
             sargs = dict(
-                symbol=self._symbol,
+                symbol=self._buy_order["symbol"],
                 quantity=abs(int(self._buy_order["quantity"])),
                 product=self._buy_order["product"],
                 side="S",
@@ -89,7 +90,7 @@ class Strategy:
             self._is_target_reached()
             if self._ltp < self._stop:
                 args = dict(
-                    symbol=self._symbol,
+                    symbol=self._buy_order["symbol"],
                     order_id=self._sell_order,
                     exchange=self._buy_order["exchange"],
                     quantity=abs(int(self._buy_order["quantity"])),
