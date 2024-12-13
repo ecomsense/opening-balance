@@ -22,7 +22,7 @@ def find_underlying(symbol):
             underlying_begin = pattern.match(underlying).group()
             # If the symbol begins with the alpha of underlying
             if symbol_begin.startswith(underlying_begin):
-                return {underlying: low}
+                return underlying, low
         return None  # Return None if no match is found
     except Exception as e:
         print(f"{e} while find underlying regex")
