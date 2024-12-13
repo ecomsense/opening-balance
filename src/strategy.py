@@ -50,7 +50,7 @@ class Strategy:
             for order in self._orders:
                 if self._sell_order == order["order_id"]:
                     logging.info(
-                        f"{self._buy_order["symbol"]} target order {self._sell_order} is reached"
+                        f"{self._buy_order['symbol']} target order {self._sell_order} is reached"
                     )
                     flag = True
         except Exception as e:
