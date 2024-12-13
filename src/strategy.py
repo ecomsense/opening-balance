@@ -50,7 +50,7 @@ class Strategy:
             for order in self._orders:
                 if self._sell_order == order["order_id"]:
                     logging.info(
-                        f"{self._symbol} target order {self._sell_order} is reached"
+                        f"{self._buy_order["symbol"]} target order {self._sell_order} is reached"
                     )
                     flag = True
         except Exception as e:
@@ -101,8 +101,9 @@ class Strategy:
                     order_type="MARKET",
                     price=0.00,
                 )
+                logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
-                logging.debug(f"order id: {args['order_id']} {resp}")
+                logging.debug(f"order id: {args['order_id']} modify {resp=}")
                 return self._id
 
         except Exception as e:

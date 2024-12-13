@@ -325,7 +325,7 @@ if __name__ == "__main__":
         resp = Helper.api.margins
         print(resp)
 
-    trades()
+    orders()
     margin()
     resp = Helper.pnl("rpnl")
     print(resp)
