@@ -46,15 +46,18 @@ class Strategy:
 
     def _is_target_reached(self):
         try:
+            flag = False
             for order in self._orders:
                 if self._sell_order == order["order_id"]:
                     logging.info(
                         f"{self._symbol} target order {self._sell_order} is reached"
                     )
-                    return self._id
+                    flag = True
         except Exception as e:
             logging.error(f"{e} get order from book")
             print_exc()
+        finally:
+            return flag
 
     def place_sell_order(self):
         try:
@@ -87,8 +90,9 @@ class Strategy:
 
     def exit_order(self):
         try:
-            self._is_target_reached()
-            if self._ltp < self._stop:
+            if self._is_target_reached():
+                return self._id
+            elif self._ltp < self._stop:
                 args = dict(
                     symbol=self._buy_order["symbol"],
                     order_id=self._sell_order,

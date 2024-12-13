@@ -91,20 +91,22 @@ class Helper:
     @classmethod
     def symbol_info(cls, exchange, symbol):
         try:
+            low = False
             if exchange == "MCX":
                 resp = find_underlying(symbol)
                 if resp:
                     symbol, low = resp
             if cls.subscribed.get(symbol, None) is None:
-                token = self.api.instrument_symbol(exchange, symbol)
+                token = cls.api.instrument_symbol(exchange, symbol)
                 now = pdlm.now()
                 fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
                 to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
                 key = exchange + "|" + str(token)
-                if low is None:
-                    resp = self.api.historical(exchange, token, fm, to)
+                if not low:
+                    resp = cls.api.historical(exchange, token, fm, to)
                     low = resp[-2]["intl"]
                 cls.subscribed[symbol] = {
+                    "symbol": symbol,
                     "key": key,
                     # "low": 0,
                     "low": low,
