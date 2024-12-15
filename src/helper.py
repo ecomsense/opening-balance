@@ -1,3 +1,4 @@
+from sys import call_tracing
 from traceback import print_exc
 import re
 from stock_brokers.finvasia.finvasia import Finvasia
@@ -28,6 +29,19 @@ def find_underlying(symbol):
         print(f"{e} while find underlying regex")
         print_exc()
         return None
+
+
+def find_mcx_exit_condition(symbol):
+    try:
+        condition = "self._ltp < self._low"
+        call_or_put = re.search(r"(P|C)(?=\d+$)", symbol).group(1)
+        if call_or_put == "P":
+            condition = "self._ltp > self._low"
+    except Exception as e:
+        print(f"{e} while find mcx exit condtion")
+        print_exc()
+    finally:
+        return condition
 
 
 def send_messages(msg):
@@ -91,11 +105,13 @@ class Helper:
     @classmethod
     def symbol_info(cls, exchange, symbol):
         try:
+            condition = "self._ltp < self._low"
             low = False
             if exchange == "MCX":
                 resp = find_underlying(symbol)
                 if resp:
                     symbol, low = resp
+                    condition = find_mcx_exit_condition(symbol)
             if cls.subscribed.get(symbol, None) is None:
                 token = cls.api.instrument_symbol(exchange, symbol)
                 now = pdlm.now()
@@ -110,6 +126,7 @@ class Helper:
                     "key": key,
                     # "low": 0,
                     "low": low,
+                    "condition": condition,
                     "ltp": cls._subscribe_till_ltp(key),
                 }
             if cls.subscribed.get(symbol, None) is not None:
@@ -325,6 +342,8 @@ if __name__ == "__main__":
         resp = Helper.api.margins
         print(resp)
 
+    resp = find_mcx_exit_condition(symbol="NIFTY28NOV24C23400")
+    print(resp)
     orders()
     margin()
     resp = Helper.pnl("rpnl")

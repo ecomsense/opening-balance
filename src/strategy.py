@@ -22,6 +22,7 @@ class Strategy:
             self._low = float(symbol_info["low"])
             self._ltp = float(symbol_info["ltp"])
             self._stop = float(symbol_info["low"])
+            self._condition = symbol_info["condition"]
             exchange = self._buy_order["exchange"]
             self._target = O_SETG["targets"][exchange]
             self._sell_order = ""
@@ -92,14 +93,15 @@ class Strategy:
         try:
             if self._is_target_reached():
                 return self._id
-            elif self._ltp < self._stop:
+            elif eval(self._condition):
                 args = dict(
                     symbol=self._buy_order["symbol"],
                     order_id=self._sell_order,
                     exchange=self._buy_order["exchange"],
                     quantity=abs(int(self._buy_order["quantity"])),
-                    order_type="MARKET",
-                    price=0.00,
+                    order_type="LIMIT",
+                    price=round((self._ltp / 2) / 0.05) * 0.005,
+                    trigger_price=0.00,
                 )
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
