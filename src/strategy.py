@@ -94,13 +94,15 @@ class Strategy:
             if self._is_target_reached():
                 return self._id
             elif eval(self._condition):
+                target_buffer = self._target * self._fill_price / 100
+                target_virtual = self._fill_price - target_buffer
                 args = dict(
                     symbol=self._buy_order["symbol"],
                     order_id=self._sell_order,
                     exchange=self._buy_order["exchange"],
                     quantity=abs(int(self._buy_order["quantity"])),
                     order_type="LIMIT",
-                    price=round((self._ltp / 2) / 0.05) * 0.05,
+                    price=round(target_virtual / 0.05) * 0.05,
                     trigger_price=0.00,
                 )
                 logging.debug(f"modify order {args}")
@@ -118,7 +120,7 @@ class Strategy:
             ltp = ltps.get(self._symbol, None)
             if ltp is not None:
                 self._ltp = float(ltp)
-            getattr(self, self._fn)()
+            return getattr(self, self._fn)()
         except Exception as e:
             logging.error(f"{e} in run for buy order {self._id}")
             print_exc()

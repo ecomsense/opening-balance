@@ -1,4 +1,3 @@
-from sys import call_tracing
 from traceback import print_exc
 import re
 from stock_brokers.finvasia.finvasia import Finvasia
@@ -108,10 +107,10 @@ class Helper:
             condition = "self._ltp < self._low"
             low = False
             if exchange == "MCX":
+                condition = find_mcx_exit_condition(symbol)
                 resp = find_underlying(symbol)
                 if resp:
                     symbol, low = resp
-                    condition = find_mcx_exit_condition(symbol)
             if cls.subscribed.get(symbol, None) is None:
                 token = cls.api.instrument_symbol(exchange, symbol)
                 now = pdlm.now()
@@ -342,7 +341,9 @@ if __name__ == "__main__":
         resp = Helper.api.margins
         print(resp)
 
-    resp = find_mcx_exit_condition(symbol="NIFTY28NOV24C23400")
+    resp = find_underlying(symbol="NATURALGAS24DEC28P230")
+    print(resp)
+    resp = find_mcx_exit_condition(symbol="NATURALGAS24DEC28P230")
     print(resp)
     orders()
     margin()

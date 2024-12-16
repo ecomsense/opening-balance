@@ -54,7 +54,7 @@ def create_strategy(list_of_orders):
                 b = order_item["buy_order"]
                 info = Helper.symbol_info(b["exchange"], b["symbol"])
                 if info:
-                    logging.info(f"CREATE new strategy {order_item['id']}")
+                    logging.info(f"CREATE new strategy {order_item['id']} {info}")
                     strgy = Strategy(
                         {}, order_item["id"], order_item["buy_order"], info
                     )
@@ -91,4 +91,5 @@ def main():
         logging.error(f"{e} while init")
 
 
-main()
+if __name__ == "__main__":
+    main()
