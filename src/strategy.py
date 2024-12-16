@@ -100,7 +100,7 @@ class Strategy:
                     exchange=self._buy_order["exchange"],
                     quantity=abs(int(self._buy_order["quantity"])),
                     order_type="LIMIT",
-                    price=round((self._ltp / 2) / 0.05) * 0.005,
+                    price=round((self._ltp / 2) / 0.05) * 0.05,
                     trigger_price=0.00,
                 )
                 logging.debug(f"modify order {args}")
