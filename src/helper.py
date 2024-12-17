@@ -108,6 +108,7 @@ class Helper:
             low = False
             if exchange == "MCX":
                 condition = find_mcx_exit_condition(symbol)
+                logging.debug(f"{condition=} for {symbol=}")
                 resp = find_underlying(symbol)
                 if resp:
                     symbol, low = resp
@@ -341,9 +342,10 @@ if __name__ == "__main__":
         resp = Helper.api.margins
         print(resp)
 
-    resp = find_underlying(symbol="NATURALGAS24DEC28P230")
+    dct = {"symbol": "NATURALGAS24DEC28P230"}
+    resp = find_underlying(dct["symbol"])
     print(resp)
-    resp = find_mcx_exit_condition(symbol="NATURALGAS24DEC28P230")
+    resp = find_mcx_exit_condition(dct["symbol"])
     print(resp)
     orders()
     margin()

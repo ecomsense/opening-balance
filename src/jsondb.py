@@ -1,6 +1,7 @@
 import pendulum as pdlm
 from constants import O_FUTL, logging
 from traceback import print_exc
+from toolkit.kokoo import timer
 
 
 class Jsondb:
@@ -26,6 +27,7 @@ class Jsondb:
     @classmethod
     def write(cls, write_job):
         O_FUTL.write_file(cls.F_ORDERS, write_job)
+        timer(1)
 
     @classmethod
     def filter_trades(cls, trades_from_api, completed_trades):

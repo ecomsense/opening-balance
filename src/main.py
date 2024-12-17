@@ -14,6 +14,7 @@ def run_strategies(strategies, trades_from_api):
             ltps = Helper.get_quotes()
             logging.info(f"RUNNING {strgy._fn} for {strgy._id}")
             completed_buy_order_id = strgy.run(trades_from_api, ltps)
+            logging.debug(f"{completed_buy_order_id=} while run strategies")
             obj_dict = strgy.__dict__
             obj_dict.pop("_orders")
             pprint(obj_dict)

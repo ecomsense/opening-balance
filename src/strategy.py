@@ -62,6 +62,7 @@ class Strategy:
 
     def place_sell_order(self):
         try:
+            self._fn = "exit_order"
             sargs = dict(
                 symbol=self._buy_order["symbol"],
                 quantity=abs(int(self._buy_order["quantity"])),
@@ -75,20 +76,20 @@ class Strategy:
             )
             logging.debug(sargs)
             self._sell_order = Helper.one_side(sargs)
-            self._fn = "exit_order"
-            if self._sell_order is None:
-                raise RuntimeError(
-                    f"unable to get buy order number {self._id} for {self._buy_order}. please manage"
-                )
+
+            # Validate sell order response
+            if not self._sell_order or not isinstance(self._sell_order, str):
+                logging.error(f"Invalid sell order response: {self._sell_order}")
+                __import__("sys").exit(1)
             else:
-                type_of_sell_order = type(self._sell_order)
-                logging.debug(f"{type_of_sell_order=} {self._sell_order}")
+                logging.info(f"sell order for {self._sell_order} is {self._buy_order}")
 
             if self._stop == 0:
+                logging.debug("removing order because stop is 0")
                 return self._id
 
         except Exception as e:
-            logging.error(f"{e} whle place sell order")
+            logging.error(f"{e} while place sell order")
             print_exc()
 
     def exit_order(self):
@@ -122,7 +123,9 @@ class Strategy:
             ltp = ltps.get(self._symbol, None)
             if ltp is not None:
                 self._ltp = float(ltp)
-            return getattr(self, self._fn)()
+            result = getattr(self, self._fn)()
+            logging.debug("getattr {result=}")
+            return result
         except Exception as e:
             logging.error(f"{e} in run for buy order {self._id}")
             print_exc()
