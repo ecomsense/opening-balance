@@ -2,6 +2,7 @@ import pendulum as pdlm
 from constants import O_FUTL, logging
 from traceback import print_exc
 from toolkit.kokoo import timer
+import os
 
 
 class Jsondb:
@@ -21,13 +22,28 @@ class Jsondb:
             print_exc()
 
     @classmethod
-    def read(cls):
-        return O_FUTL.json_fm_file(cls.F_ORDERS)
+    def write(cls, write_job):
+        temp_file = cls.F_ORDERS + ".tmp"  # Marker file for the writer
+
+        # Write to strategies.json only if marker file does not exist
+        with open(temp_file, "w"):  # Create marker file (can be empty)
+            pass  # This ensures the marker is created
+
+        try:
+            O_FUTL.write_file(cls.F_ORDERS, write_job)
+        finally:
+            # Remove the marker file after the write is completed
+            os.remove(temp_file)
 
     @classmethod
-    def write(cls, write_job):
-        O_FUTL.write_file(cls.F_ORDERS, write_job)
-        timer(1)
+    def read(cls):
+        temp_file = cls.F_ORDERS + ".tmp"  # Marker file for synchronization
+
+        # Wait until the marker file is deleted (indicating writer is done)
+        while os.path.exists(temp_file):
+            timer(0.1)  # Wait for a short interval before checking again
+
+        return O_FUTL.json_fm_file(cls.F_ORDERS)
 
     @classmethod
     def filter_trades(cls, trades_from_api, completed_trades):

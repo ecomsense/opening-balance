@@ -1,5 +1,5 @@
 from constants import logging, O_SETG, S_DATA
-from helper import Helper
+from helper import Helper, find_mcx_exit_condition
 from strategy import Strategy
 from toolkit.kokoo import is_time_past, timer
 from traceback import print_exc
@@ -25,7 +25,7 @@ def run_strategies(strategies, trades_from_api):
             else:
                 write_job.append(obj_dict)
 
-        if any(write_job):
+        if write_job:
             Jsondb.write(write_job)
     except Exception as e:
         print_exc()
@@ -48,6 +48,7 @@ def strategies_from_file():
 
 def create_strategy(list_of_orders):
     try:
+        condition = "self._ltp < self._low"
         strgy = None
         info = None
         if any(list_of_orders):
@@ -57,6 +58,7 @@ def create_strategy(list_of_orders):
                 info = Helper.symbol_info(b["exchange"], b["symbol"])
                 if info:
                     logging.info(f"CREATE new strategy {order_item['id']} {info}")
+                    info["condition"] = find_mcx_exit_condition(b["symbol"])
                     strgy = Strategy(
                         {}, order_item["id"], order_item["buy_order"], info
                     )
@@ -79,9 +81,9 @@ def main():
         while not is_time_past(O_SETG["trade"]["stop"]):
             strategies = strategies_from_file()
             trades_from_api = Helper.trades()
-            list_of_trades = Jsondb.filter_trades(
-                trades_from_api, Helper.completed_trades
-            )
+            completed_trades = Helper.completed_trades
+            logging.debug(f"{completed_trades=}")
+            list_of_trades = Jsondb.filter_trades(trades_from_api, completed_trades)
             strgy = create_strategy(list_of_trades)
             if strgy:
                 strategies.append(strgy)

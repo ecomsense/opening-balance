@@ -104,11 +104,8 @@ class Helper:
     @classmethod
     def symbol_info(cls, exchange, symbol):
         try:
-            condition = "self._ltp < self._low"
             low = False
             if exchange == "MCX":
-                condition = find_mcx_exit_condition(symbol)
-                logging.debug(f"{condition=} for {symbol=}")
                 resp = find_underlying(symbol)
                 if resp:
                     symbol, low = resp
@@ -121,12 +118,12 @@ class Helper:
                 if not low:
                     resp = cls.api.historical(exchange, token, fm, to)
                     low = resp[-2]["intl"]
+
                 cls.subscribed[symbol] = {
                     "symbol": symbol,
                     "key": key,
                     # "low": 0,
                     "low": low,
-                    "condition": condition,
                     "ltp": cls._subscribe_till_ltp(key),
                 }
             if cls.subscribed.get(symbol, None) is not None:

@@ -124,7 +124,7 @@ class Strategy:
             if ltp is not None:
                 self._ltp = float(ltp)
             result = getattr(self, self._fn)()
-            logging.debug("getattr {result=}")
+            logging.debug(f"getattr {result=}")
             return result
         except Exception as e:
             logging.error(f"{e} in run for buy order {self._id}")
