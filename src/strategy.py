@@ -94,7 +94,7 @@ class Strategy:
             if self._is_target_reached():
                 return self._id
             elif eval(self._condition):
-                target_buffer = self._target * self._fill_price / 100
+                target_buffer = 2 * self._fill_price / 100
                 target_virtual = self._fill_price - target_buffer
                 args = dict(
                     symbol=self._buy_order["symbol"],
