@@ -19,6 +19,7 @@ def run_strategies(strategies, trades_from_api):
             pprint(obj_dict)
             timer(1)
             if completed_buy_order_id:
+                logging.debug(f" order buy {completed_buy_order_id} completed")
                 Helper.completed_trades.append(completed_buy_order_id)
             else:
                 write_job.append(obj_dict)

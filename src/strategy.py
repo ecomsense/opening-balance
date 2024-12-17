@@ -75,12 +75,14 @@ class Strategy:
             )
             logging.debug(sargs)
             self._sell_order = Helper.one_side(sargs)
+            self._fn = "exit_order"
             if self._sell_order is None:
                 raise RuntimeError(
-                    f"unable to get order number for {self._buy_order}. please manage"
+                    f"unable to get buy order number {self._id} for {self._buy_order}. please manage"
                 )
             else:
-                self._fn = "exit_order"
+                type_of_sell_order = type(self._sell_order)
+                logging.debug(f"{type_of_sell_order=} {self._sell_order}")
 
             if self._stop == 0:
                 return self._id
