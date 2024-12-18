@@ -27,22 +27,22 @@ class Strategy:
             self._target = O_SETG["targets"][exchange]
             self._sell_order = ""
             self._orders = []
-            self._fn = "set_target"
+            self._set_target_and_stop()
+            self._fn = "place_sell_order"
 
-    def set_target(self):
+    def _set_target_and_stop(self):
         try:
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer
-            if self._fill_price < self._low and (self._buy_order["exchange"] != "MCX"):
-                self._target = min(target_virtual, self._low)
-                self._stop = 0.00
-            elif self._buy_order["exchange"] == "MCX":
-                self._target = target_virtual
-                if eval(self._condition):
-                    self._stop = 0.00
-
+            self._target = target_virtual
+            if self._buy_order["exchange"] != "MCX":
+                if self._fill_price < self._low:
+                    self._target = min(target_virtual, self._low)
             self._target = round(self._target / 0.05) * 0.05
-            self._fn = "place_sell_order"
+
+            if eval(self._condition):
+                self._stop = 0.00
+
         except Exception as e:
             print_exc()
             print(f"{e} while set target")
@@ -95,11 +95,12 @@ class Strategy:
     def exit_order(self):
         try:
             if self._stop == 0:
-                logging.debug(f"REMOVING {self._id} order because stop is 0")
+                logging.debug(f"REMOVING {self._id} order because {self._stop}")
                 return self._id
             elif self._is_target_reached():
                 return self._id
             elif eval(self._condition):
+                logging.debug(f"REMOVING {self._id} because {self._condition} met")
                 target_buffer = 2 * self._fill_price / 100
                 target_virtual = self._fill_price - target_buffer
                 args = dict(
