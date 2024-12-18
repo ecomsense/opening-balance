@@ -33,11 +33,13 @@ class Strategy:
         try:
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer
-            if self._ltp < self._low and (self._buy_order["exchange"] != "MCX"):
+            if self._fill_price < self._low and (self._buy_order["exchange"] != "MCX"):
                 self._target = min(target_virtual, self._low)
                 self._stop = 0.00
-            else:
+            elif self._buy_order["exchange"] == "MCX":
                 self._target = target_virtual
+                if eval(self._condition):
+                    self._stop = 0.00
 
             self._target = round(self._target / 0.05) * 0.05
             self._fn = "place_sell_order"
@@ -50,7 +52,7 @@ class Strategy:
             flag = False
             for order in self._orders:
                 if self._sell_order == order["order_id"]:
-                    logging.info(
+                    logging.debug(
                         f"{self._buy_order['symbol']} target order {self._sell_order} is reached"
                     )
                     flag = True
@@ -82,11 +84,9 @@ class Strategy:
                 logging.error(f"Invalid sell order response: {self._sell_order}")
                 __import__("sys").exit(1)
             else:
-                logging.info(f"sell order for {self._sell_order} is {self._buy_order}")
-
-            if self._stop == 0:
-                logging.debug("removing order because stop is 0")
-                return self._id
+                logging.info(
+                    f"TARGET order for {self._buy_order} is {self._sell_order}"
+                )
 
         except Exception as e:
             logging.error(f"{e} while place sell order")
@@ -94,7 +94,10 @@ class Strategy:
 
     def exit_order(self):
         try:
-            if self._is_target_reached():
+            if self._stop == 0:
+                logging.debug(f"REMOVING {self._id} order because stop is 0")
+                return self._id
+            elif self._is_target_reached():
                 return self._id
             elif eval(self._condition):
                 target_buffer = 2 * self._fill_price / 100
@@ -112,6 +115,8 @@ class Strategy:
                 resp = Helper.modify_order(args)
                 logging.debug(f"order id: {args['order_id']} modify {resp=}")
                 return self._id
+            else:
+                return None
 
         except Exception as e:
             logging.error(f"{e} while exit order")
@@ -124,7 +129,6 @@ class Strategy:
             if ltp is not None:
                 self._ltp = float(ltp)
             result = getattr(self, self._fn)()
-            logging.debug(f"getattr {result=}")
             return result
         except Exception as e:
             logging.error(f"{e} in run for buy order {self._id}")

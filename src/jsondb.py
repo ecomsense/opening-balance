@@ -34,6 +34,7 @@ class Jsondb:
         finally:
             # Remove the marker file after the write is completed
             os.remove(temp_file)
+            logging.debug("write completed")
 
     @classmethod
     def read(cls):
@@ -42,8 +43,9 @@ class Jsondb:
         # Wait until the marker file is deleted (indicating writer is done)
         while os.path.exists(temp_file):
             timer(0.1)  # Wait for a short interval before checking again
-
-        return O_FUTL.json_fm_file(cls.F_ORDERS)
+        else:
+            logging.debug("reading file")
+            return O_FUTL.json_fm_file(cls.F_ORDERS)
 
     @classmethod
     def filter_trades(cls, trades_from_api, completed_trades):

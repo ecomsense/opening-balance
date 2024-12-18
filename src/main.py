@@ -7,31 +7,6 @@ from pprint import pprint
 from jsondb import Jsondb
 
 
-def run_strategies(strategies, trades_from_api):
-    try:
-        write_job = []
-        for strgy in strategies:
-            ltps = Helper.get_quotes()
-            logging.info(f"RUNNING {strgy._fn} for {strgy._id}")
-            completed_buy_order_id = strgy.run(trades_from_api, ltps)
-            logging.debug(f"{completed_buy_order_id=} while run strategies")
-            obj_dict = strgy.__dict__
-            obj_dict.pop("_orders")
-            pprint(obj_dict)
-            timer(1)
-            if completed_buy_order_id:
-                logging.debug(f" order buy {completed_buy_order_id} completed")
-                Helper.completed_trades.append(completed_buy_order_id)
-            else:
-                write_job.append(obj_dict)
-
-        if write_job:
-            Jsondb.write(write_job)
-    except Exception as e:
-        print_exc()
-        logging.error(f"{e} while run_strategies")
-
-
 def strategies_from_file():
     try:
         strategies = []
@@ -40,10 +15,11 @@ def strategies_from_file():
             for attribs in list_of_attribs:
                 strgy = Strategy(attribs, "", {}, {})
                 strategies.append(strgy)
-        return strategies
     except Exception as e:
         logging.error(f"{e} while strategies_from_file")
         print_exc()
+    finally:
+        return strategies
 
 
 def create_strategy(list_of_orders):
@@ -58,7 +34,8 @@ def create_strategy(list_of_orders):
                 info = Helper.symbol_info(b["exchange"], b["symbol"])
                 if info:
                     logging.info(f"CREATE new strategy {order_item['id']} {info}")
-                    info["condition"] = find_mcx_exit_condition(b["symbol"])
+                    condition = find_mcx_exit_condition(b["symbol"])
+                    info["condition"] = condition
                     strgy = Strategy(
                         {}, order_item["id"], order_item["buy_order"], info
                     )
@@ -75,11 +52,36 @@ def _init():
     Helper.api
 
 
+def run_strategies(strategies, trades_from_api):
+    try:
+        write_job = []
+        for strgy in strategies:
+            ltps = Helper.get_quotes()
+            logging.info(f"RUNNING {strgy._fn} for {strgy._id}")
+            completed_buy_order_id = strgy.run(trades_from_api, ltps)
+            obj_dict = strgy.__dict__
+            obj_dict.pop("_orders")
+            pprint(obj_dict)
+            timer(1)
+            if completed_buy_order_id:
+                logging.debug(f"COMPLETED buy {completed_buy_order_id}")
+                Helper.completed_trades.append(completed_buy_order_id)
+            else:
+                write_job.append(obj_dict)
+
+    except Exception as e:
+        print_exc()
+        logging.error(f"{e} while run_strategies")
+    finally:
+        return write_job
+
+
 def main():
     try:
         _init()
         while not is_time_past(O_SETG["trade"]["stop"]):
             strategies = strategies_from_file()
+
             trades_from_api = Helper.trades()
             completed_trades = Helper.completed_trades
             logging.debug(f"{completed_trades=}")
@@ -87,7 +89,9 @@ def main():
             strgy = create_strategy(list_of_trades)
             if strgy:
                 strategies.append(strgy)
-            run_strategies(strategies, trades_from_api)
+
+            write_job = run_strategies(strategies, trades_from_api)
+            Jsondb.write(write_job)
     except KeyboardInterrupt:
         __import__("sys").exit()
     except Exception as e:
