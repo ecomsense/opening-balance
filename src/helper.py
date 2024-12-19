@@ -301,7 +301,6 @@ if __name__ == "__main__":
     from pprint import pprint
     import pandas as pd
     from constants import S_DATA
-    import pendulum as pdlm
 
     Helper.api
 
