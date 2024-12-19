@@ -95,7 +95,6 @@ class Helper:
                 quotes = cls.ws.ltp
                 ltp = quotes.get(ws_key, None)
                 timer(0.25)
-            return ltp
         except Exception as e:
             logging.error(f"{e} while get ltp")
             print_exc()
@@ -118,7 +117,6 @@ class Helper:
                 if not low:
                     resp = cls.api.historical(exchange, token, fm, to)
                     low = resp[-2]["intl"]
-
                 cls.subscribed[symbol] = {
                     "symbol": symbol,
                     "key": key,
@@ -127,8 +125,9 @@ class Helper:
                     "ltp": cls._subscribe_till_ltp(key),
                 }
             if cls.subscribed.get(symbol, None) is not None:
-                if cls.subscribed[symbol]["ltp"] is None:
-                    raise ValueError("Ltp cannot be None")
+                quotes = cls.ws.ltp
+                ws_key = cls.subscribed[symbol]["key"]
+                cls.subscribed[symbol]["ltp"] = quotes[ws_key]
                 return cls.subscribed[symbol]
         except Exception as e:
             logging.error(f"{e} while symbol info")
@@ -339,11 +338,6 @@ if __name__ == "__main__":
         resp = Helper.api.margins
         print(resp)
 
-    dct = {"symbol": "NATURALGAS24DEC28P230"}
-    resp = find_underlying(dct["symbol"])
-    print(resp)
-    resp = find_mcx_exit_condition(dct["symbol"])
-    print(resp)
     orders()
     margin()
     resp = Helper.pnl("rpnl")
