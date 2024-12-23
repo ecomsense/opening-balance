@@ -101,15 +101,19 @@ class Strategy:
                 return self._id
             elif eval(self._condition):
                 logging.debug(f"REMOVING {self._id} because {self._condition} met")
-                target_buffer = 2 * self._fill_price / 100
-                target_virtual = self._fill_price - target_buffer
+                if self._buy_order["exchange"] == "MCX":
+                    exit_buffer = 50 * self._fill_price / 100
+                    exit_virtual = self._fill_price - exit_buffer
+                else:
+                    exit_buffer = 2 * self._ltp / 100
+                    exit_virtual = self._ltp - exit_buffer
                 args = dict(
                     symbol=self._buy_order["symbol"],
                     order_id=self._sell_order,
                     exchange=self._buy_order["exchange"],
                     quantity=abs(int(self._buy_order["quantity"])),
                     order_type="LIMIT",
-                    price=round(target_virtual / 0.05) * 0.05,
+                    price=round(exit_virtual / 0.05) * 0.05,
                     trigger_price=0.00,
                 )
                 logging.debug(f"modify order {args}")
