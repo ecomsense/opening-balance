@@ -9,18 +9,9 @@ from os import path
 from traceback import print_exc
 from pprint import pprint
 
-"""
-    description:
-        import our  custom logger from toolkit
-"""
-try:
-    from toolkit.logger import Logger
-except ModuleNotFoundError:
-    __import__("os").system("pip install git+https://github.com/pannet1/toolkit")
-    __import__("time").sleep(5)
-    from toolkit.logger import Logger
 
 from toolkit.fileutils import Fileutils
+from toolkit.logger import Logger
 
 O_FUTL = Fileutils()
 S_DATA = "../data/"
