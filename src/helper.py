@@ -1,7 +1,7 @@
 from traceback import print_exc
 import re
-from finvasia.finvasia import Finvasia
-from finvasia.api_helper import (
+from stock_brokers.finvasia.finvasia import Finvasia
+from stock_brokers.finvasia.api_helper import (
     make_order_modify_args,
     make_order_place_args,
     post_order_hook,
