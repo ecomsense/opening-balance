@@ -1,8 +1,8 @@
 """
-    Purchase price for each trade plus 5% should be auto exit separately
-    Options stike chart respective 9.16 one min candle low will be stop loss
-    Buy will be manual  and sell will be algo with both target and stoploss.
-    Multiple trades will be triggered and to be tracked separetely.
+Purchase price for each trade plus 5% should be auto exit separately
+Options stike chart respective 9.16 one min candle low will be stop loss
+Buy will be manual  and sell will be algo with both target and stoploss.
+Multiple trades will be triggered and to be tracked separetely.
 """
 
 from constants import logging, O_SETG
@@ -35,9 +35,15 @@ class Strategy:
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer
             self._target = target_virtual
+            """
             if self._buy_order["exchange"] != "MCX":
                 if self._fill_price < self._low:
                     self._target = min(target_virtual, self._low)
+
+                # helow two lines added from above
+            """
+            if self._fill_price < self._low:
+                self._target = min(target_virtual, self._low)
             self._target = round(self._target / 0.05) * 0.05
 
             if eval(self._condition):
@@ -101,12 +107,18 @@ class Strategy:
                 return self._id
             elif eval(self._condition):
                 logging.debug(f"REMOVING {self._id} because {self._condition} met")
+                """
                 if self._buy_order["exchange"] == "MCX":
                     exit_buffer = 50 * self._fill_price / 100
                     exit_virtual = self._fill_price - exit_buffer
                 else:
                     exit_buffer = 2 * self._ltp / 100
                     exit_virtual = self._ltp - exit_buffer
+
+                # add below two lines instead of above
+                """
+                exit_buffer = 2 * self._ltp / 100
+                exit_virtual = self._ltp - exit_buffer
                 args = dict(
                     symbol=self._buy_order["symbol"],
                     order_id=self._sell_order,

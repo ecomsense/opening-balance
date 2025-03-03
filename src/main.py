@@ -34,8 +34,10 @@ def create_strategy(list_of_orders):
                 info = Helper.symbol_info(b["exchange"], b["symbol"])
                 if info:
                     logging.info(f"CREATE new strategy {order_item['id']} {info}")
+                    """
                     if b["exchange"] == "MCX":
                         condition = find_mcx_exit_condition(b["symbol"])
+                    """
                     info["condition"] = condition
                     strgy = Strategy(
                         {}, order_item["id"], order_item["buy_order"], info

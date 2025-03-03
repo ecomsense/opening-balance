@@ -104,10 +104,12 @@ class Helper:
     def symbol_info(cls, exchange, symbol):
         try:
             low = False
+            """
             if exchange == "MCX":
                 resp = find_underlying(symbol)
                 if resp:
                     symbol, low = resp
+            """
             if cls.subscribed.get(symbol, None) is None:
                 token = cls.api.instrument_symbol(exchange, symbol)
                 now = pdlm.now()
@@ -306,12 +308,15 @@ if __name__ == "__main__":
 
     def trades():
         resp = Helper.trades()
-        pd.DataFrame(resp).to_csv(S_DATA + "trades.csv", index=False)
+        if resp:
+            pd.DataFrame(resp).to_csv(S_DATA + "trades.csv", index=False)
+            print(pd.DataFrame(resp))
 
     def orders():
         resp = Helper.orders()
         if any(resp):
             pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)
+            print(pd.DataFrame(resp))
 
     def history(exchange, symbol):
         token = Helper.api.instrument_symbol(exchange, symbol)
