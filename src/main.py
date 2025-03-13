@@ -1,5 +1,5 @@
 from constants import logging, O_SETG, S_DATA
-from helper import Helper, find_mcx_exit_condition
+from helper import Helper
 from strategy import Strategy
 from toolkit.kokoo import is_time_past, timer
 from traceback import print_exc
