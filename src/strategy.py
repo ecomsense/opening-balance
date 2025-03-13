@@ -28,6 +28,7 @@ class Strategy:
             self._sell_order = ""
             self._orders = []
             self._set_target_and_stop()
+            self.FLAG = "working"
             self._fn = "place_sell_order"
 
     def _set_target_and_stop(self):
@@ -138,6 +139,9 @@ class Strategy:
         except Exception as e:
             logging.error(f"{e} while exit order")
             print_exc()
+
+    def status(self):
+        return self.FLAG
 
     def run(self, orders, ltps):
         try:

@@ -1,6 +1,22 @@
-log:
-  show: 0
-  level: 29
 trade:
   target: 2
   stop: "23:50"
+  rest_min: 3
+NIFTY:
+  symbol: NIFTY
+  exchange: NFO
+  moneyness: 0       # 0=atm 1=otm -1=itm
+  expiry: xx334
+BANKNIFTY:
+  symbol: BANKNIFTY
+  exchange: NFO
+  moneyness: 0       # 0=atm 1=otm -1=itm
+  expiry: xx334
+NATURALGAS:
+  symbol: NATURALGAS
+  exchange: MCX
+  moneyness: 0       # 0=atm 1=otm -1=itm
+  expiry: xx334
+log:
+  show: 0
+  level: 29

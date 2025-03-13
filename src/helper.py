@@ -289,6 +289,13 @@ class Helper:
             if any(resp):
                 pd.DataFrame(resp).to_csv(S_DATA + "positions.csv", index=False)
                 # calc value
+                # list []
+                # dict {}
+                # list_of_dict = [
+                # {},
+                # {},
+                # ]
+
                 for pos in resp:
                     ttl += pos[key]
         except Exception as e:
