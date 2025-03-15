@@ -13,13 +13,52 @@ from traceback import print_exc
 class EnterAndExit:
     is_trade_complete = True
 
-    def __init__(self, ce_or_pe: str, option_info: dict):
-        self._ce_or_pe = ce_or_pe
-        self._option_info = option_info
+    def __init__(self, symbol_info: dict, quantity=0):
+        self._id = ""
+        self._buy_order = {}
+        self._symbol = symbol_info["symbol"]
+        self._fill_price = None
+        self._low = float(symbol_info["low"])
+        self._ltp = float(symbol_info["ltp"])
+        self._stop = float(symbol_info["low"])
+        # TODO to be removed later
+        self._condition = "self._ltp > self._low"
+        exchange = symbol_info["key"].split("|")[0]
+        self._exchange = exchange
+        self._target = O_SETG["targets"][exchange]
+        self._sell_order = ""
+        self._orders = []
+        self._quantity = quantity
+        self.FLAG = "working"
+        self._is_trading_below_low = False
+        self._fn = "is_trading_below_low"
 
-    def set_new_trading_symbol(self, trading_symbol):
-        self._symbol = trading_symbol
-        self.is_trade_complete = False
+    def is_trading_below_low(self):
+        if self._ltp < self._low:
+            self._is_trading_below_low = True
+            self._fn = "is_breakout"
+        return self._is_trading_below_low
+
+    def is_breakout(self):
+        if self._ltp > self._low:
+            bargs = dict(
+                symbol=self._symbol,
+                quantity=self.quantity,
+                product="M",
+                side="B",
+                price=0,
+                order_type="MKT",
+                exchange=self._exchange,
+                tag="entry",
+            )
+            logging.debug(bargs)
+            resp = Helper.one_side(bargs)
+            if resp:
+                self._id = resp
+                # TODO read orderbook for buy order info
+                self._buy_order = bargs
+                self._fill_price = self._ltp
+                self._fn = "place_sell_order"
 
     def _set_target_and_stop(self):
         try:
@@ -61,6 +100,7 @@ class EnterAndExit:
 
     def place_sell_order(self):
         try:
+            self._set_target_and_stop()
             self._fn = "exit_order"
             sargs = dict(
                 symbol=self._buy_order["symbol"],

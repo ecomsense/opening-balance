@@ -36,17 +36,6 @@ def _init():
         print(f"{e} while init")
 
 
-def create_strategies(SYMBOLS_TO_TRADE):
-    strategies = []
-    for k, v in SYMBOLS_TO_TRADE.items():
-        list_of_option_types = ["C", "P"]
-        for ce_or_pe in list_of_option_types:
-            strgy = EnterAndExit(ce_or_pe, {k: v})
-            strategies.append(strgy)
-            timer(5)
-    return strategies
-
-
 def find_trading_symbol_to_trade(ce_or_pe, kwargs):
     # TODO kwargs should be removed and just the value need to be passed
     for k, v in kwargs.items():
@@ -56,7 +45,6 @@ def find_trading_symbol_to_trade(ce_or_pe, kwargs):
         base=v["base"],
         expiry=v["expiry"],
     )
-    k = v["base"]
     exchange = dct_sym[k]["exchange"]
     token = dct_sym[k]["token"]
     ltp_for_underlying = Helper.ltp(exchange, token)
@@ -71,8 +59,18 @@ def find_trading_symbol_to_trade(ce_or_pe, kwargs):
         dct_symbols=Helper.tokens_for_all_trading_symbols,
     )
     resp = Helper.symbol_info(v["option_exchange"], result["symbol"])
-    print(resp)
-    return result
+    return resp
+
+
+def create_strategies(SYMBOLS_TO_TRADE):
+    strategies = []
+    for k, v in SYMBOLS_TO_TRADE.items():
+        lst_of_option_type = ["C", "P"]
+        for option_type in lst_of_option_type:
+            symbol_info = find_trading_symbol_to_trade(option_type, {k: v})
+            strgy = EnterAndExit(symbol_info)
+            strategies.append(strgy)
+    return strategies
 
 
 def main():
@@ -81,12 +79,6 @@ def main():
             SYMBOLS_TO_TRADE = _init()
             strategies = create_strategies(SYMBOLS_TO_TRADE)
             for strgy in strategies:
-                if strgy.is_trade_complete:
-                    current_symbol_info = find_trading_symbol_to_trade(
-                        strgy._ce_or_pe, strgy._option_info
-                    )
-                    trading_symbol_to_trade = current_symbol_info["symbol"]
-                    strgy.set_new_trading_symbol(trading_symbol_to_trade)
                 strgy.run(Helper.orders, Helper.get_quotes())
     except KeyboardInterrupt:
         __import__("sys").exit()
