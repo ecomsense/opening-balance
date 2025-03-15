@@ -95,3 +95,4 @@ def set_logger():
 
 
 logging = set_logger()
+logging.info("Happy Trading")

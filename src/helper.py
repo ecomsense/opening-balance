@@ -103,7 +103,9 @@ class Helper:
     @classmethod
     def symbol_info(cls, exchange, symbol):
         try:
-            low = False
+            # TODO undo this code
+            # low = False
+            low = 200
             """
             if exchange == "MCX":
                 resp = find_underlying(symbol)
