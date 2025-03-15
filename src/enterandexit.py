@@ -11,26 +11,23 @@ from traceback import print_exc
 
 
 class EnterAndExit:
-    is_trade_complete = True
+    _id = None
+    _buy_order = None
+    _fill_price = None
+    _sell_order = None
+    _orders = None
+    # TODO to be removed later
+    _condition = "self._ltp > self._low"
+    _is_trading_below_low = False
 
-    def __init__(self, symbol_info: dict, quantity=0):
-        self._id = ""
-        self._buy_order = {}
-        self._symbol = symbol_info["symbol"]
-        self._fill_price = None
-        self._low = float(symbol_info["low"])
-        self._ltp = float(symbol_info["ltp"])
-        self._stop = float(symbol_info["low"])
-        # TODO to be removed later
-        self._condition = "self._ltp > self._low"
-        exchange = symbol_info["key"].split("|")[0]
+    def __init__(self, symbol, low, ltp, exchange, quantity, target):
+        self._symbol = symbol
+        self._low = (float(low),)
+        self._ltp = (float(ltp),)
+        self._stop = (float(low),)
         self._exchange = exchange
-        self._target = O_SETG["targets"][exchange]
-        self._sell_order = ""
-        self._orders = []
+        self._target = target
         self._quantity = quantity
-        self.FLAG = "working"
-        self._is_trading_below_low = False
         self._fn = "is_trading_below_low"
 
     def is_trading_below_low(self):
@@ -43,7 +40,7 @@ class EnterAndExit:
         if self._ltp > self._low:
             bargs = dict(
                 symbol=self._symbol,
-                quantity=self.quantity,
+                quantity=self._quantity,
                 product="M",
                 side="B",
                 price=0,
@@ -55,9 +52,14 @@ class EnterAndExit:
             resp = Helper.one_side(bargs)
             if resp:
                 self._id = resp
-                # TODO read orderbook for buy order info
-                self._buy_order = bargs
-                self._fill_price = self._ltp
+                self._fn = "find_fill_price"
+
+    def find_fill_price(self):
+        # TODO read orderbook for buy order info
+        for order in self._orders:
+            if self._id == order["order_id"]:
+                self._buy_order = order
+                self._fill_price = order["fill_price"]
                 self._fn = "place_sell_order"
 
     def _set_target_and_stop(self):
