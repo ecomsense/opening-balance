@@ -7,6 +7,7 @@ from constants import O_SETG
 # complex data types
 from pprint import pprint
 from typing import Dict, Optional
+from symbols import Symbols
 
 """
 
@@ -95,22 +96,8 @@ class SomeClass:
         self._base = base
         self.expiry = expiry
         self.csvfile = f"../data/{self._option_exchange}_symbols.csv"
-
-    def get_exchange_token_map_finvasia(self):
-        if Fileutils().is_file_not_2day(self.csvfile):
-            url = f"https://api.shoonya.com/{self._option_exchange}_symbols.txt.zip"
-            print(f"{url}")
-            df = pd.read_csv(url)
-            # filter the response
-            df = df[
-                (df["Exchange"] == self._option_exchange)
-                # & (df["TradingSymbol"].str.contains(self._base + self.expiry))
-            ][["Token", "TradingSymbol"]]
-            # split columns with necessary values
-            df[["Symbol", "Expiry", "OptionType", "StrikePrice"]] = df[
-                "TradingSymbol"
-            ].str.extract(r"([A-Z]+)(\d+[A-Z]+\d+)([CP])(\d+)")
-            df.to_csv(self.csvfile, index=False)
+        self._symbols = Symbols(option_exchange, base, expiry)
+        self._symbols.get_exchange_token_map_finvasia()
 
     def get_atm(self, ltp) -> int:
         current_strike = ltp - (ltp % dct_sym[self._base]["diff"])
