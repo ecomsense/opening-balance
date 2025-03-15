@@ -1,3 +1,13 @@
+# Optionally, if you'd like to store the data in a pandas DataFrame for better readability
+import pandas as pd
+
+from constants import O_SETG
+
+# pprint is optional .. it pretty prints
+# complex data types
+from pprint import pprint
+from typing import Dict, Optional
+
 """
 
 All 3 yes
@@ -71,24 +81,15 @@ capital 1L
 pfolio_stop 2%
 pfolio_target 5%
 """
-from constants import O_SETG
-# pprint is optional .. it pretty prints
-# complex data types
-from pprint import pprint
-
-def initialize():
-    pprint(O_SETG)
-    keys = ["log", "targets", "trade", "MCX"]
-    four_key_items = {key: value for key, value in O_SETG.items() if isinstance(value, dict) and key not in keys}
-    print(f"{four_key_items=}")
-    return four_key_items
-
-def get_tokens_from_symbols():
-    symbols_for_trade = initialize()
 
 
-    # from Symbols class find the token of trading symbols
-    symbol_info: dict = "complete the code here"
+class BeautifulClass:
+
+    def __init__(self) -> None:
+        print("no neeed to call me")
+
+
+class SomeClass:
     def __init__(self, option_exchange: str, base: str, expiry: str):
         self._option_exchange = option_exchange
         self._base = base
@@ -161,7 +162,7 @@ def get_tokens_from_symbols():
         return dct["TradingSymbol"]
 
     def find_closest_premium(
-            self, quotes: Dict[str, float], premium: float, contains: str
+        self, quotes: Dict[str, float], premium: float, contains: str
     ) -> Optional[str]:
         contains = self.expiry + contains
         # Create a dictionary to store symbol to absolute difference mapping
@@ -179,78 +180,13 @@ def get_tokens_from_symbols():
 
         return closest_symbol
 
-    def find_symbol_in_moneyness(self, tradingsymbol, ce_or_pe, price_type):
-        def find_strike(ce_or_pe):
-            search = self._base + self.expiry + ce_or_pe
-            # find the remaining string in the symbol after removing search
-            strike = re.sub(search, "", tradingsymbol)
-            return search, int(strike)
 
-        search, strike = find_strike(ce_or_pe)
-        if ce_or_pe == "C":
-            if price_type == "ITM":
-                return search + str(strike - dct_sym[self._base]["diff"])
-            else:
-                return search + str(strike + dct_sym[self._base]["diff"])
-        else:
-            if price_type == "ITM":
-                return search + str(strike + dct_sym[self._base]["diff"])
-            else:
-                return search + str(strike - dct_sym[self._base]["diff"])
-
-    # find low for each trading symbol from Helper class and update it
-    symbol_info_with_low = "complete the code here"
-    class OptionSymbolManager:
-        def __init__(self, option_exchange: str, base: str, expiry: str):
-            self._option_exchange = option_exchange
-            self._base = base
-            self.expiry = expiry
-            self.csvfile = f"../data/{self._option_exchange}_symbols.csv"
-
-    def get_exchange_token_map_finvasia(self):
-        # Your implementation for fetching symbols (as in your original code)
-        pass
-
-    def get_tokens(self, strike):
-        # Your implementation for getting tokens (as in your original code)
-        pass
-
-    def find_low_for_symbols(self):
-        # Initialize a dictionary to store symbol and its corresponding low price
-        symbol_info_with_low = {}
-
-        # Assuming you have a list of trading symbols that you want to process
-        symbols = self.get_all_trading_symbols()
-
-        # Fetch the low price for each symbol
-        for symbol in symbols:
-            low_price = Helper.get_low_price(symbol)  # Assuming Helper.get_low_price(symbol) is defined
-            symbol_info_with_low[symbol] = low_price  # Store the low price in the dictionary
-
-        # Optionally, if you'd like to store the data in a pandas DataFrame for better readability
-        import pandas as pd
-        symbol_info_df = pd.DataFrame(symbol_info_with_low.items(), columns=["TradingSymbol", "LowPrice"])
-
-        # Optionally, save the DataFrame to a CSV file
-        symbol_info_df.to_csv("symbol_info_with_low.csv", index=False)
-
-        return symbol_info_with_low
-
-    def get_all_trading_symbols(self):
-        # This method should return a list of all the trading symbols
-        # You can either extract these from a CSV file or call another method to get the available symbols
-        df = pd.read_csv(self.csvfile)
-        return df["TradingSymbol"].tolist()
-
-    # store the symbol_info in Helper class as property so
-    # it is available to us anywhere we want
-
-    class OptionSymbolManager:
-        def __init__(self, option_exchange: str, base: str, expiry: str):
-            self._option_exchange = option_exchange
-            self._base = base
-            self.expiry = expiry
-            self.csvfile = f"../data/{self._option_exchange}_symbols.csv"
+class OptionSymbolManager:
+    def __init__(self, option_exchange: str, base: str, expiry: str):
+        self._option_exchange = option_exchange
+        self._base = base
+        self.expiry = expiry
+        self.csvfile = f"../data/{self._option_exchange}_symbols.csv"
 
     def get_all_trading_symbols(self):
         # This method should return a list of all the trading symbols
@@ -264,9 +200,79 @@ def get_tokens_from_symbols():
         # Update the symbol_info_with_low in Helper class
         Helper.update_symbol_info_with_low(symbols)
 
-# Now, you can access the symbol_info_with_low property anywhere:
-option_manager = OptionSymbolManager(option_exchange="NSE", base="NIFTY", expiry="23Mar2025")
-option_manager.update_symbol_info()  # Update the symbol info
+    def find_low_for_symbols(self):
+        # Initialize a dictionary to store symbol and its corresponding low price
+        symbol_info_with_low = {}
 
-# Retrieve the updated symbol info with low prices
-print(Helper.get_symbol_info_with_low())
+        # Assuming you have a list of trading symbols that you want to process
+        symbols = self.get_all_trading_symbols()
+
+        # Fetch the low price for each symbol
+        for symbol in symbols:
+            low_price = Helper.get_low_price(
+                symbol
+            )  # Assuming Helper.get_low_price(symbol) is defined
+            symbol_info_with_low[symbol] = (
+                low_price  # Store the low price in the dictionary
+            )
+
+        symbol_info_df = pd.DataFrame(
+            symbol_info_with_low.items(), columns=["TradingSymbol", "LowPrice"]
+        )
+
+        # Optionally, save the DataFrame to a CSV file
+        symbol_info_df.to_csv("symbol_info_with_low.csv", index=False)
+
+        return symbol_info_with_low
+
+
+def initialize():
+    pprint(O_SETG)
+    keys = ["log", "targets", "trade", "MCX"]
+    four_key_items = {
+        key: value
+        for key, value in O_SETG.items()
+        if isinstance(value, dict) and key not in keys
+    }
+    print(f"{four_key_items=}")
+    return four_key_items
+
+
+def get_tokens_from_symbols():
+    symbols_for_trade = initialize()
+
+    # from Symbols class find the token of trading symbols
+    symbol_info: dict = "complete the code here"
+
+
+def find_symbol_in_moneyness(self, tradingsymbol, ce_or_pe, price_type):
+    def find_strike(ce_or_pe):
+        search = self._base + self.expiry + ce_or_pe
+        # find the remaining string in the symbol after removing search
+        strike = re.sub(search, "", tradingsymbol)
+        return search, int(strike)
+
+    search, strike = find_strike(ce_or_pe)
+    if ce_or_pe == "C":
+        if price_type == "ITM":
+            return search + str(strike - dct_sym[self._base]["diff"])
+        else:
+            return search + str(strike + dct_sym[self._base]["diff"])
+    else:
+        if price_type == "ITM":
+            return search + str(strike + dct_sym[self._base]["diff"])
+        else:
+            return search + str(strike - dct_sym[self._base]["diff"])
+
+
+if __name__ == "__main__":
+    from helper import Helper
+
+    # Now, you can access the symbol_info_with_low property anywhere:
+    option_manager = OptionSymbolManager(
+        option_exchange="NSE", base="NIFTY", expiry="23Mar2025"
+    )
+    option_manager.update_symbol_info()  # Update the symbol info
+
+    # Retrieve the updated symbol info with low prices
+    print(Helper.get_symbol_info_with_low())

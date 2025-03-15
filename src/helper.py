@@ -305,6 +305,11 @@ class Helper:
         finally:
             return ttl
 
+    @classmethod
+    def get_symbol_info_with_low(cls, donkey):
+        print(donkey)
+        pass
+
 
 if __name__ == "__main__":
     from pprint import pprint
