@@ -1,5 +1,5 @@
 trade:
-  target: 2
+  target: 10
   stop: "23:50"
   rest_min: 3
 NIFTY:
