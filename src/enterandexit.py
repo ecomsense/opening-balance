@@ -12,25 +12,32 @@ from traceback import print_exc
 
 class EnterAndExit:
     _id = None
-    _buy_order = None
-    _fill_price = None
+    _buy_order = {}
+    _fill_price = 0
     _sell_order = None
-    _orders = None
-    # TODO to be removed later
-    _condition = "self._ltp > self._low"
+    _orders = []
     _is_trading_below_low = False
+    FLAG = "working"
 
-    def __init__(self, symbol, low, ltp, exchange, quantity, target):
+    def __init__(
+        self,
+        symbol: str,
+        low: float,
+        ltp: float,
+        exchange: str,
+        quantity: int,
+        target: float,
+    ):
         self._symbol = symbol
-        self._low = (float(low),)
-        self._ltp = (float(ltp),)
-        self._stop = (float(low),)
+        self._low = low
+        self._ltp = ltp
+        self._stop = low
         self._exchange = exchange
         self._target = target
         self._quantity = quantity
         self._fn = "is_trading_below_low"
 
-    def is_trading_below_low(self):
+    def is_trading_below_low(self) -> bool:
         if self._ltp < self._low:
             self._is_trading_below_low = True
             self._fn = "is_breakout"
@@ -55,7 +62,6 @@ class EnterAndExit:
                 self._fn = "find_fill_price"
 
     def find_fill_price(self):
-        # TODO read orderbook for buy order info
         for order in self._orders:
             if self._id == order["order_id"]:
                 self._buy_order = order
@@ -76,10 +82,8 @@ class EnterAndExit:
             """
             if self._fill_price < self._low:
                 self._target = min(target_virtual, self._low)
-            self._target = round(self._target / 0.05) * 0.05
-
-            if eval(self._condition):
                 self._stop = 0.00
+            self._target = round(self._target / 0.05) * 0.05
 
         except Exception as e:
             print_exc()
@@ -138,18 +142,8 @@ class EnterAndExit:
                 return self._id
             elif self._is_target_reached():
                 return self._id
-            elif eval(self._condition):
-                logging.debug(f"REMOVING {self._id} because {self._condition} met")
-                """
-                if self._buy_order["exchange"] == "MCX":
-                    exit_buffer = 50 * self._fill_price / 100
-                    exit_virtual = self._fill_price - exit_buffer
-                else:
-                    exit_buffer = 2 * self._ltp / 100
-                    exit_virtual = self._ltp - exit_buffer
-
-                # add below two lines instead of above
-                """
+            elif self._ltp < self._stop:
+                logging.debug(f"REMOVING {self._id} because stop loss")
                 exit_buffer = 2 * self._ltp / 100
                 exit_virtual = self._ltp - exit_buffer
                 args = dict(
@@ -177,6 +171,7 @@ class EnterAndExit:
 
     def run(self, orders, ltps):
         try:
+            print(ltps)
             self._orders = orders
             ltp = ltps.get(self._symbol, None)
             if ltp is not None:

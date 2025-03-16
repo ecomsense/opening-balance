@@ -131,7 +131,7 @@ class Helper:
             if cls.subscribed.get(symbol, None) is not None:
                 quotes = cls.ws.ltp
                 ws_key = cls.subscribed[symbol]["key"]
-                cls.subscribed[symbol]["ltp"] = quotes[ws_key]
+                cls.subscribed[symbol]["ltp"] = float(quotes[ws_key])
                 return cls.subscribed[symbol]
         except Exception as e:
             logging.error(f"{e} while symbol info")
@@ -159,7 +159,7 @@ class Helper:
             if resp is not None:
                 return float(resp["lp"])
             else:
-                raise ValueError("ltp is none")
+                return None
         except Exception as e:
             message = f"{e} while ltp"
             send_messages(message)

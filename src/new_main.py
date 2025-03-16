@@ -68,6 +68,8 @@ def create_strategies(SYMBOLS_TO_TRADE):
         lst_of_option_type = ["C", "P"]
         for option_type in lst_of_option_type:
             symbol_info = find_trading_symbol_to_trade(option_type, {k: v})
+            print(symbol_info)
+            timer(5)
             strgy = EnterAndExit(
                 symbol=symbol_info["symbol"],
                 low=symbol_info["low"],
@@ -80,38 +82,18 @@ def create_strategies(SYMBOLS_TO_TRADE):
     return strategies
 
 
-def test():
-    try:
-        tokens_of_all_trading_symbols = {}
-        black_list = ["log", "trade", "target", "MCX"]
-        SYMBOLS_TO_TRADE = {k: v for k, v in O_SETG.items() if k not in black_list}
-        logging.info(SYMBOLS_TO_TRADE)
-        for k, v in SYMBOLS_TO_TRADE.items():
-            sym = Symbols(
-                option_exchange=v["option_exchange"],
-                base=v["base"],
-                expiry=v["expiry"],
-            )
-            # find ltp for underlying
-            print(f"{k}=")
-            ltp_for_underlying = 2216 if k == "NIFTY" else 44816
-            # find from ltp
-            atm = sym.get_atm(ltp_for_underlying)
-            # find tokens from ltp
-            logging.info(f"atm {atm} for underlying {k} from {ltp_for_underlying}")
-            tokens_of_all_trading_symbols.update(sym.get_tokens(atm))
-        Helper.tokens_for_all_trading_symbols = tokens_of_all_trading_symbols
-    except Exception as e:
-        print(e)
-
-
 def main():
     try:
+        while not is_time_past(O_SETG["trade"]["start"]):
+            print(f"waiting till {O_SETG['trade']['start']}")
+
+        SYMBOLS_TO_TRADE = _init()
+        strategies: list[EnterAndExit] = create_strategies(SYMBOLS_TO_TRADE)
         while not is_time_past(O_SETG["trade"]["stop"]):
-            SYMBOLS_TO_TRADE = _init()
-            strategies = create_strategies(SYMBOLS_TO_TRADE)
             for strgy in strategies:
-                strgy.run(Helper.orders, Helper.get_quotes())
+                msg = f"{strgy._symbol} is going to {strgy._fn}"
+                resp = strgy.run(Helper.orders, Helper.get_quotes())
+                logging.info(f"{msg} returned {resp}")
     except KeyboardInterrupt:
         __import__("sys").exit()
     except Exception as e:
@@ -120,4 +102,4 @@ def main():
 
 
 if __name__ == "__main__":
-    test()
+    main()
