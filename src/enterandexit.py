@@ -17,7 +17,6 @@ class EnterAndExit:
     _sell_order = None
     _orders = []
     _is_trading_below_low = False
-    FLAG = "working"
 
     def __init__(
         self,
@@ -40,33 +39,39 @@ class EnterAndExit:
     def is_trading_below_low(self) -> bool:
         if self._ltp < self._low:
             self._is_trading_below_low = True
-            self._fn = "is_breakout"
+            self._fn = "wait_for_breakout"
         return self._is_trading_below_low
 
-    def is_breakout(self):
-        if self._ltp > self._low:
-            bargs = dict(
-                symbol=self._symbol,
-                quantity=self._quantity,
-                product="M",
-                side="B",
-                price=0,
-                order_type="MKT",
-                exchange=self._exchange,
-                tag="entry",
-            )
-            logging.debug(bargs)
-            resp = Helper.one_side(bargs)
-            if resp:
-                self._id = resp
-                self._fn = "find_fill_price"
+    def wait_for_breakout(self):
+        try:
+            if self._ltp > self._low:
+                bargs = dict(
+                    symbol=self._symbol,
+                    quantity=self._quantity,
+                    product="M",
+                    side="B",
+                    price=0,
+                    order_type="MKT",
+                    exchange=self._exchange,
+                    tag="entry",
+                )
+                logging.debug(bargs)
+                resp = Helper.one_side(bargs)
+                if resp:
+                    self._id = resp
+                    self._fn = "find_fill_price"
+        except Exception as e:
+            print(f"{e} while waiting for breakout")
 
     def find_fill_price(self):
-        for order in self._orders:
-            if self._id == order["order_id"]:
-                self._buy_order = order
-                self._fill_price = order["fill_price"]
-                self._fn = "place_sell_order"
+        try:
+            for order in self._orders:
+                if self._id == order["order_id"]:
+                    self._buy_order = order
+                    self._fill_price = order["fill_price"]
+                    self._fn = "place_sell_order"
+        except Exception as e:
+            logging.error(f"{e} find_fill_price")
 
     def _set_target_and_stop(self):
         try:
@@ -79,10 +84,10 @@ class EnterAndExit:
                     self._target = min(target_virtual, self._low)
 
                 # helow two lines added from above
-            """
             if self._fill_price < self._low:
                 self._target = min(target_virtual, self._low)
                 self._stop = 0.00
+            """
             self._target = round(self._target / 0.05) * 0.05
 
         except Exception as e:
@@ -137,13 +142,10 @@ class EnterAndExit:
 
     def exit_order(self):
         try:
-            if self._stop == 0:
-                logging.debug(f"REMOVING {self._id} order because {self._stop}")
-                return self._id
-            elif self._is_target_reached():
-                return self._id
+            if self._is_target_reached():
+                self._is_trading_below_low = False
+                self._fn = "is_trading_below_low"
             elif self._ltp < self._stop:
-                logging.debug(f"REMOVING {self._id} because stop loss")
                 exit_buffer = 2 * self._ltp / 100
                 exit_virtual = self._ltp - exit_buffer
                 args = dict(
@@ -158,16 +160,12 @@ class EnterAndExit:
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
                 logging.debug(f"order id: {args['order_id']} modify {resp=}")
-                return self._id
-            else:
-                return None
+                self._is_trading_below_low = False
+                self._fn = "is_trading_below_low"
 
         except Exception as e:
             logging.error(f"{e} while exit order")
             print_exc()
-
-    def status(self):
-        return self.FLAG
 
     def run(self, orders, ltps):
         try:

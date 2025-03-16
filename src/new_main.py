@@ -5,16 +5,42 @@ from toolkit.kokoo import is_time_past, timer
 from traceback import print_exc
 from pprint import pprint
 from symbols import Symbols, dct_sym
+from typing import Any, Literal
 
 
-def _init():
+def get_symbols_to_trade() -> dict[str, Any]:
+    """
+    Retrieves tokens for all trading symbols.
+
+    This function filters trading symbols based on a blacklist and retrieves tokens
+    for each symbol using the `Symbols` class. It calculates the at-the-money (ATM)
+    strike price based on the latest traded price (LTP) of the underlying asset and
+    fetches the corresponding tokens.
+
+    Returns:
+        A dictionary where keys are trading symbols (str), and values contain
+        symbol-specific configuration details from user settings.
+
+    Raises:
+        Exception: If an error occurs during token retrieval.
+    """
     try:
-        Helper.api
-        tokens_of_all_trading_symbols = {}
         black_list = ["log", "trade", "target", "MCX"]
-        SYMBOLS_TO_TRADE = {k: v for k, v in O_SETG.items() if k not in black_list}
-        logging.info(SYMBOLS_TO_TRADE)
-        for k, v in SYMBOLS_TO_TRADE.items():
+        symbols_to_trade = {k: v for k, v in O_SETG.items() if k not in black_list}
+        logging.info(symbols_to_trade)
+        return symbols_to_trade
+    except Exception as e:
+        logging.error(f"{e} while init")
+        return {}
+
+
+def find_instrument_tokens_to_trade(symbols_to_trade) -> dict[str, Any]:
+    """
+    get instrument tokens from broker for each symbol to trade and merge them together
+    """
+    try:
+        tokens_of_all_trading_symbols = {}
+        for k, v in symbols_to_trade.items():
             sym = Symbols(
                 option_exchange=v["option_exchange"],
                 base=v["base"],
@@ -30,56 +56,93 @@ def _init():
             # find tokens from ltp
             logging.info(f"atm {atm} for underlying {k} from {ltp_for_underlying}")
             tokens_of_all_trading_symbols.update(sym.get_tokens(atm))
-        Helper.tokens_for_all_trading_symbols = tokens_of_all_trading_symbols
-        return SYMBOLS_TO_TRADE
+        return tokens_of_all_trading_symbols
     except Exception as e:
-        print(f"{e} while init")
+        logging.error(f"{e} while find instrument to trade")
+        return {}
 
 
-def find_trading_symbol_to_trade(ce_or_pe, kwargs):
-    # TODO kwargs should be removed and just the value need to be passed
-    for k, v in kwargs.items():
-        print(ce_or_pe, v)
-    sym = Symbols(
-        option_exchange=v["option_exchange"],
-        base=v["base"],
-        expiry=v["expiry"],
-    )
-    exchange = dct_sym[k]["exchange"]
-    token = dct_sym[k]["token"]
-    ltp_for_underlying = Helper.ltp(exchange, token)
-    # find from ltp
-    atm = sym.get_atm(ltp_for_underlying)
-    # find tokens from ltp
-    logging.info(f"atm {atm} for underlying {k} from {ltp_for_underlying}")
-    result = sym.find_option_by_distance(
-        atm=atm,
-        distance=v["moneyness"],
-        c_or_p=ce_or_pe,
-        dct_symbols=Helper.tokens_for_all_trading_symbols,
-    )
-    resp = Helper.symbol_info(v["option_exchange"], result["symbol"])
-    return resp
+def find_trading_symbol_to_trade(
+    ce_or_pe: Literal["C", "P"], symbol_item: dict[str, Any]
+) -> dict[str, Any]:
+    """
+    find trading symbol to trade based on the atm given the
+    symbol item
 
+    Args:
+        ce_or_pe (Literal["C", "P"]): A string that denotes Call or Put
+        symbol_item (dict[str, Any]): symbol item selected to find trading symbol
 
-def create_strategies(SYMBOLS_TO_TRADE):
-    strategies = []
-    for k, v in SYMBOLS_TO_TRADE.items():
-        lst_of_option_type = ["C", "P"]
-        for option_type in lst_of_option_type:
-            symbol_info = find_trading_symbol_to_trade(option_type, {k: v})
-            print(symbol_info)
-            timer(5)
-            strgy = EnterAndExit(
-                symbol=symbol_info["symbol"],
-                low=symbol_info["low"],
-                ltp=symbol_info["ltp"],
-                exchange=v["option_exchange"],
-                quantity=v["quantity"],
-                target=v["target"],
+    Returns:
+        symbol_info: trading symbol
+
+    Raises:
+        Exception: If there is any error
+
+    """
+    try:
+        for k, v in symbol_item.items():
+            sym = Symbols(
+                option_exchange=v["option_exchange"],
+                base=v["base"],
+                expiry=v["expiry"],
             )
-            strategies.append(strgy)
-    return strategies
+            exchange = dct_sym[k]["exchange"]
+            token = dct_sym[k]["token"]
+            ltp_for_underlying = Helper.ltp(exchange, token)
+            # find from ltp
+            atm = sym.get_atm(ltp_for_underlying)
+            # find tokens from ltp
+            logging.info(f"atm {atm} for underlying {k} from {ltp_for_underlying}")
+            result = sym.find_option_by_distance(
+                atm=atm,
+                distance=v["moneyness"],
+                c_or_p=ce_or_pe,
+                dct_symbols=Helper.tokens_for_all_trading_symbols,
+            )
+            symbol_info: dict[str, Any] = Helper.symbol_info(
+                v["option_exchange"], result["symbol"]
+            )
+            return symbol_info
+        return {}
+    except Exception as e:
+        logging.error(f"{e} while finding the trading symbol")
+        return {}
+
+
+def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
+    """
+    Creates a list of strategies based on the provided symbols_to_trade.
+
+    Args:
+        symbols_to_trade (dict[str, Any]): A dictionary containing all symbols information to trade
+
+    Returns:
+        strategies: A list of EnterAndExit objects
+
+    Raises:
+        Exception: If there is any error
+    """
+    try:
+        strategies = []
+        for k, v in symbols_to_trade.items():
+            lst_of_option_type = ["C", "P"]
+            for option_type in lst_of_option_type:
+                symbol_item = {k: v}
+                symbol_info = find_trading_symbol_to_trade(option_type, symbol_item)
+                strgy = EnterAndExit(
+                    symbol=symbol_info["symbol"],
+                    low=symbol_info["low"],
+                    ltp=symbol_info["ltp"],
+                    exchange=v["option_exchange"],
+                    quantity=v["quantity"],
+                    target=v["target"],
+                )
+                strategies.append(strgy)
+        return strategies
+    except Exception as e:
+        logging.error(f"{e} while creating the strategies")
+        return []
 
 
 def main():
@@ -87,8 +150,20 @@ def main():
         while not is_time_past(O_SETG["trade"]["start"]):
             print(f"waiting till {O_SETG['trade']['start']}")
 
-        SYMBOLS_TO_TRADE = _init()
-        strategies: list[EnterAndExit] = create_strategies(SYMBOLS_TO_TRADE)
+        # login to broker api
+        Helper.api
+
+        # get user selected symbols to trade
+        symbols_to_trade = get_symbols_to_trade()
+
+        # get all the tokens we will be trading
+        Helper.tokens_for_all_trading_symbols = find_instrument_tokens_to_trade(
+            symbols_to_trade
+        )
+
+        # make strategy oject for each symbol selected
+        strategies: list[EnterAndExit] = create_strategies(symbols_to_trade)
+
         while not is_time_past(O_SETG["trade"]["stop"]):
             for strgy in strategies:
                 msg = f"{strgy._symbol} is going to {strgy._fn}"
