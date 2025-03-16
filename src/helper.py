@@ -105,7 +105,6 @@ class Helper:
         try:
             # TODO undo this code
             # low = False
-            low = 200
             """
             if exchange == "MCX":
                 resp = find_underlying(symbol)
