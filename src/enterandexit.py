@@ -8,6 +8,8 @@ Multiple trades will be triggered and to be tracked separetely.
 from constants import logging
 from helper import Helper
 from traceback import print_exc
+from timemanager import TimeManager
+import pendulum as pdlm
 
 
 class EnterAndExit:
@@ -17,6 +19,7 @@ class EnterAndExit:
     _sell_order = None
     _orders = []
     _is_trading_below_low = False
+    _time_mgr = TimeManager()
 
     def __init__(
         self,
@@ -44,7 +47,7 @@ class EnterAndExit:
 
     def wait_for_breakout(self):
         try:
-            if self._ltp > self._low:
+            if self._ltp > self._low and self._time_mgr.can_trade:
                 bargs = dict(
                     symbol=self._symbol,
                     quantity=self._quantity,
@@ -142,9 +145,9 @@ class EnterAndExit:
 
     def exit_order(self):
         try:
+            FLAG = False
             if self._is_target_reached():
-                self._is_trading_below_low = False
-                self._fn = "is_trading_below_low"
+                FLAG = True
             elif self._ltp < self._stop:
                 exit_buffer = 2 * self._ltp / 100
                 exit_virtual = self._ltp - exit_buffer
@@ -160,6 +163,9 @@ class EnterAndExit:
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
                 logging.debug(f"order id: {args['order_id']} modify {resp=}")
+
+            if FLAG:
+                self._time_mgr.set_last_trade_time(pdlm.now("Asia/Kolkata"))
                 self._is_trading_below_low = False
                 self._fn = "is_trading_below_low"
 

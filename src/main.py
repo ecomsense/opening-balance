@@ -1,100 +1,173 @@
-from constants import logging, O_SETG, S_DATA
+from constants import logging, O_SETG
 from helper import Helper
-from strategy import Strategy
+from enterandexit import EnterAndExit
 from toolkit.kokoo import is_time_past, timer
 from traceback import print_exc
-from pprint import pprint
-from jsondb import Jsondb
+from symbols import Symbols, dct_sym
+from typing import Any, Literal
 
 
-def strategies_from_file():
+def get_symbols_to_trade() -> dict[str, Any]:
+    """
+    Retrieves tokens for all trading symbols.
+
+    This function filters trading symbols based on a blacklist and retrieves tokens
+    for each symbol using the `Symbols` class. It calculates the at-the-money (ATM)
+    strike price based on the latest traded price (LTP) of the underlying asset and
+    fetches the corresponding tokens.
+
+    Returns:
+        A dictionary where keys are trading symbols (str), and values contain
+        symbol-specific configuration details from user settings.
+
+    Raises:
+        Exception: If an error occurs during token retrieval.
+    """
+    try:
+        black_list = ["log", "trade", "target", "MCX"]
+        symbols_to_trade = {k: v for k, v in O_SETG.items() if k not in black_list}
+        logging.info(symbols_to_trade)
+        return symbols_to_trade
+    except Exception as e:
+        logging.error(f"{e} while init")
+        return {}
+
+
+def find_instrument_tokens_to_trade(symbols_to_trade) -> dict[str, Any]:
+    """
+    get instrument tokens from broker for each symbol to trade and merge them together
+    """
+    try:
+        tokens_of_all_trading_symbols = {}
+        for k, v in symbols_to_trade.items():
+            sym = Symbols(
+                option_exchange=v["option_exchange"],
+                base=v["base"],
+                expiry=v["expiry"],
+            )
+            sym.get_exchange_token_map_finvasia()
+            # find ltp for underlying
+            exchange = dct_sym[k]["exchange"]
+            token = dct_sym[k]["token"]
+            ltp_for_underlying = Helper.ltp(exchange, token)
+            # find from ltp
+            atm = sym.get_atm(ltp_for_underlying)
+            # find tokens from ltp
+            logging.info(f"atm {atm} for underlying {k} from {ltp_for_underlying}")
+            tokens_of_all_trading_symbols.update(sym.get_tokens(atm))
+        return tokens_of_all_trading_symbols
+    except Exception as e:
+        logging.error(f"{e} while find instrument to trade")
+        return {}
+
+
+def find_trading_symbol_to_trade(
+    ce_or_pe: Literal["C", "P"], symbol_item: dict[str, Any]
+) -> dict[str, Any]:
+    """
+    find trading symbol to trade based on the atm given the
+    symbol item
+
+    Args:
+        ce_or_pe (Literal["C", "P"]): A string that denotes Call or Put
+        symbol_item (dict[str, Any]): symbol item selected to find trading symbol
+
+    Returns:
+        symbol_info: trading symbol
+
+    Raises:
+        Exception: If there is any error
+
+    """
+    try:
+        for k, v in symbol_item.items():
+            sym = Symbols(
+                option_exchange=v["option_exchange"],
+                base=v["base"],
+                expiry=v["expiry"],
+            )
+            exchange = dct_sym[k]["exchange"]
+            token = dct_sym[k]["token"]
+            ltp_for_underlying = Helper.ltp(exchange, token)
+            # find from ltp
+            atm = sym.get_atm(ltp_for_underlying)
+            # find tokens from ltp
+            logging.info(f"atm {atm} for underlying {k} from {ltp_for_underlying}")
+            result = sym.find_option_by_distance(
+                atm=atm,
+                distance=v["moneyness"],
+                c_or_p=ce_or_pe,
+                dct_symbols=Helper.tokens_for_all_trading_symbols,
+            )
+            symbol_info: dict[str, Any] = Helper.symbol_info(
+                v["option_exchange"], result["symbol"]
+            )
+            return symbol_info
+        return {}
+    except Exception as e:
+        logging.error(f"{e} while finding the trading symbol")
+        return {}
+
+
+def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
+    """
+    Creates a list of strategies based on the provided symbols_to_trade.
+
+    Args:
+        symbols_to_trade (dict[str, Any]): A dictionary containing all symbols information to trade
+
+    Returns:
+        strategies: A list of EnterAndExit objects
+
+    Raises:
+        Exception: If there is any error
+    """
     try:
         strategies = []
-        list_of_attribs = Jsondb.read()
-        if list_of_attribs and any(list_of_attribs):
-            for attribs in list_of_attribs:
-                strgy = Strategy(attribs, "", {}, {})
+        for k, v in symbols_to_trade.items():
+            lst_of_option_type = ["C", "P"]
+            for option_type in lst_of_option_type:
+                symbol_item = {k: v}
+                symbol_info = find_trading_symbol_to_trade(option_type, symbol_item)
+                strgy = EnterAndExit(
+                    symbol=symbol_info["symbol"],
+                    low=symbol_info["low"],
+                    ltp=symbol_info["ltp"],
+                    exchange=v["option_exchange"],
+                    quantity=v["quantity"],
+                    target=v["target"],
+                )
                 strategies.append(strgy)
-    except Exception as e:
-        logging.error(f"{e} while strategies_from_file")
-        print_exc()
-    finally:
         return strategies
-
-
-def create_strategy(list_of_orders):
-    try:
-        condition = "self._ltp < self._low"
-        strgy = None
-        info = None
-        if any(list_of_orders):
-            order_item = list_of_orders[0]
-            if any(order_item):
-                b = order_item["buy_order"]
-                info = Helper.symbol_info(b["exchange"], b["symbol"])
-                if info:
-                    logging.info(f"CREATE new strategy {order_item['id']} {info}")
-                    """
-                    if b["exchange"] == "MCX":
-                        condition = find_mcx_exit_condition(b["symbol"])
-                    """
-                    info["condition"] = condition
-                    strgy = Strategy(
-                        {}, order_item["id"], order_item["buy_order"], info
-                    )
-        return strgy
     except Exception as e:
-        logging.error(f"{e} while creating strategy")
-        print_exc()
-
-
-def _init():
-    logging.info("HAPPY TRADING")
-    F_ORDERS = S_DATA + "orders.json"
-    Jsondb.startup(F_ORDERS)
-    Helper.api
-
-
-def run_strategies(strategies, trades_from_api):
-    try:
-        write_job = []
-        for strgy in strategies:
-            ltps = Helper.get_quotes()
-            logging.info(f"RUNNING {strgy._fn} for {strgy._id}")
-            completed_buy_order_id = strgy.run(trades_from_api, ltps)
-            obj_dict = strgy.__dict__
-            obj_dict.pop("_orders")
-            pprint(obj_dict)
-            timer(1)
-            if completed_buy_order_id:
-                logging.debug(f"COMPLETED buy {completed_buy_order_id}")
-                Helper.completed_trades.append(completed_buy_order_id)
-            else:
-                write_job.append(obj_dict)
-
-    except Exception as e:
-        print_exc()
-        logging.error(f"{e} while run_strategies")
-    finally:
-        return write_job
+        logging.error(f"{e} while creating the strategies")
+        return []
 
 
 def main():
     try:
-        _init()
+        while not is_time_past(O_SETG["trade"]["start"]):
+            print(f"waiting till {O_SETG['trade']['start']}")
+
+        # login to broker api
+        Helper.api
+
+        # get user selected symbols to trade
+        symbols_to_trade = get_symbols_to_trade()
+
+        # get all the tokens we will be trading
+        Helper.tokens_for_all_trading_symbols = find_instrument_tokens_to_trade(
+            symbols_to_trade
+        )
+
+        # make strategy oject for each symbol selected
+        strategies: list[EnterAndExit] = create_strategies(symbols_to_trade)
+
         while not is_time_past(O_SETG["trade"]["stop"]):
-            strategies = strategies_from_file()
-
-            trades_from_api = Helper.trades()
-            completed_trades = Helper.completed_trades
-            logging.debug(f"{completed_trades=}")
-            list_of_trades = Jsondb.filter_trades(trades_from_api, completed_trades)
-            strgy = create_strategy(list_of_trades)
-            if strgy:
-                strategies.append(strgy)
-
-            write_job = run_strategies(strategies, trades_from_api)
-            Jsondb.write(write_job)
+            for strgy in strategies:
+                msg = f"{strgy._symbol} is going to {strgy._fn}"
+                resp = strgy.run(Helper.orders, Helper.get_quotes())
+                logging.info(f"{msg} returned {resp}")
     except KeyboardInterrupt:
         __import__("sys").exit()
     except Exception as e:
