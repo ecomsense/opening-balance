@@ -1,5 +1,6 @@
 trade:
   target: 2
+  start: "9:16"
   stop: "23:50"
   rest_min: 3
 NIFTY:
@@ -17,5 +18,5 @@ BANKNIFTY:
   quantity: 15
   target: 5
 log:
-  show: 1
+  show: 0
   level: 10
