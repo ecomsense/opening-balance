@@ -131,7 +131,7 @@ def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
                 symbol_info = find_trading_symbol_to_trade(option_type, symbol_item)
                 strgy = EnterAndExit(
                     symbol=symbol_info["symbol"],
-                    low=symbol_info["low"],
+                    low=float(symbol_info["low"]),
                     ltp=symbol_info["ltp"],
                     exchange=v["option_exchange"],
                     quantity=v["quantity"],
