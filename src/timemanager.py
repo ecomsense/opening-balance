@@ -9,11 +9,11 @@ class TimeManager:
         self.candle_times = self._generate_candle_times()
 
     def _generate_candle_times(self):
-        """Generate a list of 3-minute candle close times from market open to close."""
+        """Generate a list of 1-minute candle close times from market open to close."""
         times = []
         time = self.market_open
         while time < self.market_close:
-            time = time.add(minutes=3)
+            time = time.add(minutes=1)
             times.append(time)
         return times
 

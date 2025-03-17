@@ -62,69 +62,20 @@ class EnterAndExit:
                 resp = Helper.one_side(bargs)
                 if resp:
                     self._id = resp
+                    self._place_sell_order()
                     self._fn = "find_fill_price"
         except Exception as e:
             print(f"{e} while waiting for breakout")
 
-    def find_fill_price(self):
+    def _place_sell_order(self):
         try:
-            for order in self._orders:
-                if self._id == order["order_id"]:
-                    self._buy_order = order
-                    self._fill_price = order["fill_price"]
-                    self._fn = "place_sell_order"
-        except Exception as e:
-            logging.error(f"{e} find_fill_price")
-            print_exc()
-
-    def _set_target_and_stop(self):
-        try:
-            target_buffer = self._target * self._fill_price / 100
-            target_virtual = self._fill_price + target_buffer
-            self._target = target_virtual
-            """
-            if self._buy_order["exchange"] != "MCX":
-                if self._fill_price < self._low:
-                    self._target = min(target_virtual, self._low)
-
-                # helow two lines added from above
-            if self._fill_price < self._low:
-                self._target = min(target_virtual, self._low)
-                self._stop = 0.00
-            """
-            self._target = round(self._target / 0.05) * 0.05
-
-        except Exception as e:
-            print_exc()
-            print(f"{e} while set target")
-
-    def _is_target_reached(self):
-        try:
-            flag = False
-            for order in self._orders:
-                if self._sell_order == order["order_id"]:
-                    logging.debug(
-                        f"{self._buy_order['symbol']} target order {self._sell_order} is reached"
-                    )
-                    flag = True
-        except Exception as e:
-            logging.error(f"{e} get order from book")
-            print_exc()
-        finally:
-            return flag
-
-    def place_sell_order(self):
-        try:
-            self._set_target_and_stop()
-            self._fn = "exit_order"
             sargs = dict(
                 symbol=self._buy_order["symbol"],
                 quantity=abs(int(self._buy_order["quantity"])),
                 product=self._buy_order["product"],
                 side="S",
-                price=self._target,
-                trigger_price=0,
-                order_type="LIMIT",
+                trigger_price=self._low,
+                order_type="SLM",
                 exchange=self._buy_order["exchange"],
                 tag="exit",
             )
@@ -144,12 +95,63 @@ class EnterAndExit:
             logging.error(f"{e} while place sell order")
             print_exc()
 
+    def find_fill_price(self):
+        try:
+            for order in self._orders:
+                if self._id == order["order_id"]:
+                    self._buy_order = order
+                    self._fill_price = order["fill_price"]
+                    self._set_target()
+        except Exception as e:
+            logging.error(f"{e} find_fill_price")
+            print_exc()
+
+    def _set_target(self):
+        try:
+            target_buffer = self._target * self._fill_price / 100
+            logging.debug(
+                f"buffer = target:{self._target} x fill price:{self._fill_price} / 100"
+            )
+            target_virtual = self._fill_price + target_buffer
+            self._target = target_virtual
+            """
+            if self._buy_order["exchange"] != "MCX":
+                if self._fill_price < self._low:
+                    self._target = min(target_virtual, self._low)
+
+                # helow two lines added from above
+            if self._fill_price < self._low:
+                self._target = min(target_virtual, self._low)
+                self._stop = 0.00
+            """
+            self._target = round(self._target / 0.05) * 0.05
+            self._fn = "exit_order"
+
+        except Exception as e:
+            print_exc()
+            print(f"{e} while set target")
+
+    def _is_stoploss_hit(self):
+        try:
+            flag = False
+            for order in self._orders:
+                if self._sell_order == order["order_id"]:
+                    logging.debug(
+                        f"{self._buy_order['symbol']} target order {self._sell_order} is reached"
+                    )
+                    flag = True
+        except Exception as e:
+            logging.error(f"{e} get order from book")
+            print_exc()
+        finally:
+            return flag
+
     def exit_order(self):
         try:
             FLAG = False
-            if self._is_target_reached():
+            if self._is_stoploss_hit():
                 FLAG = True
-            elif self._ltp < self._stop:
+            elif self._ltp > self._target:
                 exit_buffer = 2 * self._ltp / 100
                 exit_virtual = self._ltp - exit_buffer
                 args = dict(
