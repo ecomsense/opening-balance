@@ -74,8 +74,9 @@ class EnterAndExit:
                 quantity=self._quantity,
                 product="M",
                 side="S",
+                price=self._low - 2,
                 trigger_price=self._low,
-                order_type="SL-MKT",
+                order_type="SL-LMT",
                 exchange=self._exchange,
                 tag="exit",
             )
