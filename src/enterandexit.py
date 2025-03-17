@@ -70,7 +70,7 @@ class EnterAndExit:
     def _place_sell_order(self):
         try:
             sargs = dict(
-                symbol=self._symbol["symbol"],
+                symbol=self._symbol,
                 quantity=self._quantity,
                 product="M",
                 side="S",
