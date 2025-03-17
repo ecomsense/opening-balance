@@ -70,13 +70,13 @@ class EnterAndExit:
     def _place_sell_order(self):
         try:
             sargs = dict(
-                symbol=self._buy_order["symbol"],
-                quantity=abs(int(self._buy_order["quantity"])),
-                product=self._buy_order["product"],
+                symbol=self._symbol["symbol"],
+                quantity=self._quantity,
+                product="M",
                 side="S",
                 trigger_price=self._low,
-                order_type="SLM",
-                exchange=self._buy_order["exchange"],
+                order_type="SL-MKT",
+                exchange=self._exchange,
                 tag="exit",
             )
             logging.debug(sargs)
