@@ -153,7 +153,7 @@ class EnterAndExit:
             FLAG = False
             if self._is_stoploss_hit():
                 FLAG = True
-            elif self._ltp > self._target:
+            elif self._ltp >= self._target:
                 exit_buffer = 2 * self._ltp / 100
                 exit_virtual = self._ltp - exit_buffer
                 args = dict(
@@ -168,11 +168,14 @@ class EnterAndExit:
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
                 logging.debug(f"order id: {args['order_id']} modify {resp=}")
+                FLAG = True
 
             if FLAG:
                 self._time_mgr.set_last_trade_time(pdlm.now("Asia/Kolkata"))
                 self._is_trading_below_low = False
                 self._fn = "is_trading_below_low"
+            else:
+                logging.debug(f"target: {self._target} < {self._ltp}")
 
         except Exception as e:
             logging.error(f"{e} while exit order")

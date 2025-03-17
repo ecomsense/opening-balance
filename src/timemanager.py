@@ -1,4 +1,5 @@
 import pendulum
+from constants import O_SETG
 
 
 class TimeManager:
@@ -12,8 +13,9 @@ class TimeManager:
         """Generate a list of 1-minute candle close times from market open to close."""
         times = []
         time = self.market_open
+        minutes = O_SETG["trade"]["rest_min"]
         while time < self.market_close:
-            time = time.add(minutes=1)
+            time = time.add(minutes=minutes)
             times.append(time)
         return times
 
@@ -44,7 +46,7 @@ class TimeManager:
 if __name__ == "__main__":
     import time
 
-    mgr = TradeManager()
+    mgr = TimeManager()
 
     while True:
         time.sleep(1)

@@ -58,6 +58,7 @@ def find_instrument_tokens_to_trade(symbols_to_trade) -> dict[str, Any]:
         return tokens_of_all_trading_symbols
     except Exception as e:
         logging.error(f"{e} while find instrument to trade")
+        print_exc()
         return {}
 
 
@@ -88,11 +89,12 @@ def find_trading_symbol_to_trade(
             )
             exchange = dct_sym[k]["exchange"]
             token = dct_sym[k]["token"]
-            ltp_for_underlying = Helper.ltp(exchange, token)
+            resp = Helper.history(exchange, token)
+            low = resp[-2]["intl"]
             # find from ltp
-            atm = sym.get_atm(ltp_for_underlying)
+            atm = sym.get_atm(float(low))
             # find tokens from ltp
-            logging.info(f"atm {atm} for underlying {k} from {ltp_for_underlying}")
+            logging.info(f"atm {atm} for underlying {k} from {low}")
             result = sym.find_option_by_distance(
                 atm=atm,
                 distance=v["moneyness"],
@@ -106,6 +108,7 @@ def find_trading_symbol_to_trade(
         return {}
     except Exception as e:
         logging.error(f"{e} while finding the trading symbol")
+        print_exc()
         return {}
 
 

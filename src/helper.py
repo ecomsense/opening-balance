@@ -101,6 +101,13 @@ class Helper:
             cls._subscribe_till_ltp(ws_key)
 
     @classmethod
+    def history(cls, exchange, token):
+        now = pdlm.now()
+        fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
+        to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+        return cls.api.historical(exchange, token, fm, to)
+
+    @classmethod
     def symbol_info(cls, exchange, symbol):
         try:
             # TODO undo this code
@@ -113,14 +120,10 @@ class Helper:
             """
             if cls.subscribed.get(symbol, None) is None:
                 token = cls.api.instrument_symbol(exchange, symbol)
-                now = pdlm.now()
-                fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
-                to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
                 key = exchange + "|" + str(token)
                 if not low:
-                    resp = cls.api.historical(exchange, token, fm, to)
+                    resp = cls.history(exchange, token)
                     low = resp[-2]["intl"]
-
                 cls.subscribed[symbol] = {
                     "symbol": symbol,
                     "key": key,
