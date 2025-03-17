@@ -3,20 +3,6 @@ trade:
   start: "9:16"
   stop: "23:50"
   rest_min: 3
-NIFTY:
-  base: NIFTY
-  option_exchange: NFO
-  moneyness: -1       # 0=atm 1=otm -1=itm
-  expiry: 20MAR25
-  quantity: 75
-  target: 5
-BANKNIFTY:
-  base: BANKNIFTY
-  option_exchange: NFO
-  moneyness: -1      # 0=atm 1=otm -1=itm
-  expiry: 27MAR25
-  quantity: 15
-  target: 5
 NATURALGAS:
   base: NATURALGAS
   option_exchange: MCX
@@ -27,3 +13,17 @@ NATURALGAS:
 log:
   show: 0
   level: 10
+#NIFTY:
+#  base: NIFTY
+#  option_exchange: NFO
+#  moneyness: -1       # 0=atm 1=otm -1=itm
+#  expiry: 20MAR25
+#  quantity: 75
+#  target: 5
+#BANKNIFTY:
+#  base: BANKNIFTY
+#  option_exchange: NFO
+#  moneyness: -1      # 0=atm 1=otm -1=itm
+#  expiry: 27MAR25
+#  quantity: 15
+#  target: 5

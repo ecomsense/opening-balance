@@ -338,10 +338,11 @@ if __name__ == "__main__":
     def history(exchange, symbol):
         token = Helper.api.instrument_symbol(exchange, symbol)
         fm = pdlm.now().replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
-        to = pdlm.now().replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+        to = pdlm.now().replace(hour=9, minute=16, second=0, microsecond=0).timestamp()
         resp = Helper.api.historical(exchange, token, fm, to)
         pprint(resp)
-        print(resp[-2]["intl"])
+        print(resp[-1]["intl"])
+        resp[[{"intl": 20, "lp": 23}]]
 
     def modify():
         args = {
