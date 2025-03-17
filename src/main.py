@@ -165,7 +165,7 @@ def main():
 
         while not is_time_past(O_SETG["trade"]["stop"]):
             for strgy in strategies:
-                msg = f"{strgy._symbol} is going to {strgy._fn}"
+                msg = f"{strgy._symbol} ltp:{strgy._ltp} low:{strgy._low} {strgy._fn}"
                 resp = strgy.run(Helper.trades(), Helper.get_quotes())
                 logging.info(f"{msg} returned {resp}")
     except KeyboardInterrupt:
