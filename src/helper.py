@@ -104,7 +104,7 @@ class Helper:
     def symbol_info(cls, exchange, symbol):
         try:
             # TODO undo this code
-            # low = False
+            low = False
             """
             if exchange == "MCX":
                 resp = find_underlying(symbol)
@@ -120,6 +120,7 @@ class Helper:
                 if not low:
                     resp = cls.api.historical(exchange, token, fm, to)
                     low = resp[-2]["intl"]
+
                 cls.subscribed[symbol] = {
                     "symbol": symbol,
                     "key": key,
