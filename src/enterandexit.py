@@ -72,6 +72,7 @@ class EnterAndExit:
             sargs = dict(
                 symbol=self._symbol,
                 quantity=self._quantity,
+                disclosed_quantity=0,
                 product="M",
                 side="S",
                 price=self._low - 2,
