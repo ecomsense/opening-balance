@@ -166,7 +166,7 @@ def main():
         while not is_time_past(O_SETG["trade"]["stop"]):
             for strgy in strategies:
                 msg = f"{strgy._symbol} is going to {strgy._fn}"
-                resp = strgy.run(Helper.orders, Helper.get_quotes())
+                resp = strgy.run(Helper.orders(), Helper.get_quotes())
                 logging.info(f"{msg} returned {resp}")
     except KeyboardInterrupt:
         __import__("sys").exit()

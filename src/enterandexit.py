@@ -75,6 +75,7 @@ class EnterAndExit:
                     self._fn = "place_sell_order"
         except Exception as e:
             logging.error(f"{e} find_fill_price")
+            print_exc()
 
     def _set_target_and_stop(self):
         try:
@@ -175,7 +176,6 @@ class EnterAndExit:
 
     def run(self, orders, ltps):
         try:
-            print(ltps)
             self._orders = orders
             ltp = ltps.get(self._symbol, None)
             if ltp is not None:
