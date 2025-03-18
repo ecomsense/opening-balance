@@ -90,7 +90,7 @@ def find_trading_symbol_to_trade(
             exchange = dct_sym[k]["exchange"]
             token = dct_sym[k]["token"]
             resp = Helper.history(exchange, token)
-            low = resp[-2]["intl"]
+            low = resp[-1]["intl"]
             # find from ltp
             atm = sym.get_atm(float(low))
             # find tokens from ltp

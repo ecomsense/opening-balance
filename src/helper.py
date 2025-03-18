@@ -104,7 +104,7 @@ class Helper:
     def history(cls, exchange, token):
         now = pdlm.now()
         fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
-        to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+        to = now.replace(hour=9, minute=16, second=0, microsecond=0).timestamp()
         return cls.api.historical(exchange, token, fm, to)
 
     @classmethod
@@ -123,7 +123,7 @@ class Helper:
                 key = exchange + "|" + str(token)
                 if not low:
                     resp = cls.history(exchange, token)
-                    low = resp[-2]["intl"]
+                    low = resp[-1]["intl"]
                 cls.subscribed[symbol] = {
                     "symbol": symbol,
                     "key": key,
@@ -342,7 +342,6 @@ if __name__ == "__main__":
         resp = Helper.api.historical(exchange, token, fm, to)
         pprint(resp)
         print(resp[-1]["intl"])
-        resp[[{"intl": 20, "lp": 23}]]
 
     def modify():
         args = {
@@ -360,6 +359,7 @@ if __name__ == "__main__":
         resp = Helper.api.margins
         print(resp)
 
+    trades()
     orders()
     margin()
     resp = Helper.pnl("rpnl")
