@@ -53,8 +53,8 @@ class EnterAndExit:
                     quantity=self._quantity,
                     product="M",
                     side="B",
-                    price=0,
-                    order_type="MKT",
+                    price=self._ltp + 2,
+                    order_type="LMT",
                     exchange=self._exchange,
                     tag="entry",
                 )
