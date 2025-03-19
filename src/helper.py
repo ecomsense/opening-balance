@@ -102,28 +102,26 @@ class Helper:
 
     @classmethod
     def history(cls, exchange, token):
-        now = pdlm.now()
-        fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
-        to = now.replace(hour=9, minute=16, second=0, microsecond=0).timestamp()
-        return cls.api.historical(exchange, token, fm, to)
+        try:
+            now = pdlm.now()
+            fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
+            to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+            return cls.api.historical(exchange, token, fm, to)
+        except Exception as e:
+            logging.error(f"{e} in history")
 
     @classmethod
     def symbol_info(cls, exchange, symbol):
         try:
             # TODO undo this code
             low = False
-            """
-            if exchange == "MCX":
-                resp = find_underlying(symbol)
-                if resp:
-                    symbol, low = resp
-            """
             if cls.subscribed.get(symbol, None) is None:
                 token = cls.api.instrument_symbol(exchange, symbol)
                 key = exchange + "|" + str(token)
                 if not low:
+                    logging.debug(f"trying to get low for {symbol=} and {token=}")
                     resp = cls.history(exchange, token)
-                    low = resp[-1]["intl"]
+                    low = resp[-2]["intl"]
                 cls.subscribed[symbol] = {
                     "symbol": symbol,
                     "key": key,
@@ -188,6 +186,19 @@ class Helper:
         except Exception as e:
             message = f"helper error {e} while modifying order"
             send_messages(message)
+            print_exc()
+
+    @classmethod
+    def positions(cls):
+        try:
+            resp = cls.api.positions
+            if resp and any(resp):
+                # print(orders[0].keys())
+                return resp
+            return [{}]
+
+        except Exception as e:
+            send_messages(f"Error fetching positions: {e}")
             print_exc()
 
     @classmethod
@@ -310,57 +321,56 @@ class Helper:
         finally:
             return ttl
 
-    @classmethod
-    def get_symbol_info_with_low(cls, donkey):
-        print(donkey)
-        pass
-
 
 if __name__ == "__main__":
     from pprint import pprint
     import pandas as pd
     from constants import S_DATA
 
-    Helper.api
+    try:
+        Helper.api
 
-    def trades():
-        resp = Helper.trades()
-        if resp:
-            pd.DataFrame(resp).to_csv(S_DATA + "trades.csv", index=False)
-            print(pd.DataFrame(resp))
+        def trades():
+            resp = Helper.trades()
+            if resp:
+                pd.DataFrame(resp).to_csv(S_DATA + "trades.csv", index=False)
+                print(pd.DataFrame(resp))
 
-    def orders():
-        resp = Helper.orders()
-        if any(resp):
-            pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)
-            print(pd.DataFrame(resp))
+        def orders():
+            resp = Helper.orders()
+            if any(resp):
+                pd.DataFrame(resp).to_csv(S_DATA + "orders.csv", index=False)
+                print(pd.DataFrame(resp))
 
-    def history(exchange, symbol):
-        token = Helper.api.instrument_symbol(exchange, symbol)
-        fm = pdlm.now().replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
-        to = pdlm.now().replace(hour=9, minute=16, second=0, microsecond=0).timestamp()
-        resp = Helper.api.historical(exchange, token, fm, to)
-        pprint(resp)
-        print(resp[-1]["intl"])
+        def test_history(exchange, symbol):
+            token = Helper.api.instrument_symbol(exchange, symbol)
+            print("token", token)
+            resp = Helper.history(exchange, token)
+            pprint(resp)
+            print(resp[-2]["intl"], resp[-2]["time"])
 
-    def modify():
-        args = {
-            "symbol": "NIFTY28NOV24C23400",
-            "exchange": "NFO",
-            "order_id": "24112200115699",
-            "price": 0.0,
-            "price_type": "MARKET",
-            "quantity": 25,
-        }
-        resp = Helper.modify_order(args)
+        def modify():
+            args = {
+                "symbol": "NIFTY28NOV24C23400",
+                "exchange": "NFO",
+                "order_id": "24112200115699",
+                "price": 0.0,
+                "price_type": "MARKET",
+                "quantity": 25,
+            }
+            resp = Helper.modify_order(args)
+            print(resp)
+
+        def margin():
+            resp = Helper.api.margins
+            print(resp)
+
+        trades()
+        orders()
+        resp = Helper.pnl("rpnl")
         print(resp)
 
-    def margin():
-        resp = Helper.api.margins
-        print(resp)
-
-    trades()
-    orders()
-    margin()
-    resp = Helper.pnl("rpnl")
-    print(resp)
+        # test_history(exchange="NFO", symbol="BANKNIFTY27MAR25C50000")
+    except Exception as e:
+        print(e)
+        print_exc()

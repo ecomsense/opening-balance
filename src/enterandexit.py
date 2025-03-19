@@ -23,6 +23,7 @@ class EnterAndExit:
 
     def __init__(
         self,
+        prefix: str,
         symbol: str,
         low: float,
         ltp: float,
@@ -30,6 +31,7 @@ class EnterAndExit:
         quantity: int,
         target: float,
     ):
+        self._prefix = prefix
         self._symbol = symbol
         self._low = low
         self._ltp = ltp
@@ -97,6 +99,27 @@ class EnterAndExit:
             logging.error(f"{e} while place sell order")
             print_exc()
 
+    def _set_target(self):
+        try:
+            rate_to_be_added = 0
+            resp = Helper.positions()
+            if resp and any(resp):
+                total_rpnl = sum(
+                    item["rpnl"]
+                    for item in resp
+                    if item["symbol"].startswith(self._prefix)
+                )
+                if total_rpnl < 0:
+                    rate_to_be_added = total_rpnl / self._quantity
+            target_buffer = self._target * self._fill_price / 100
+            target_virtual = self._fill_price + target_buffer - rate_to_be_added
+            self._target = round(target_virtual / 0.05) * 0.05
+            self._fn = "exit_order"
+
+        except Exception as e:
+            print_exc()
+            print(f"{e} while set target")
+
     def find_fill_price(self):
         try:
             for order in self._orders:
@@ -107,31 +130,6 @@ class EnterAndExit:
         except Exception as e:
             logging.error(f"{e} find_fill_price")
             print_exc()
-
-    def _set_target(self):
-        try:
-            target_buffer = self._target * self._fill_price / 100
-            logging.debug(
-                f"buffer = target:{self._target} x fill price:{self._fill_price} / 100"
-            )
-            target_virtual = self._fill_price + target_buffer
-            self._target = target_virtual
-            """
-            if self._buy_order["exchange"] != "MCX":
-                if self._fill_price < self._low:
-                    self._target = min(target_virtual, self._low)
-
-                # helow two lines added from above
-            if self._fill_price < self._low:
-                self._target = min(target_virtual, self._low)
-                self._stop = 0.00
-            """
-            self._target = round(self._target / 0.05) * 0.05
-            self._fn = "exit_order"
-
-        except Exception as e:
-            print_exc()
-            print(f"{e} while set target")
 
     def _is_stoploss_hit(self):
         try:
