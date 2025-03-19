@@ -5,6 +5,7 @@ Buy will be manual  and sell will be algo with both target and stoploss.
 Multiple trades will be triggered and to be tracked separetely.
 """
 
+from logging import raiseExceptions
 from constants import logging
 from helper import Helper
 from traceback import print_exc
@@ -60,12 +61,13 @@ class EnterAndExit:
                     exchange=self._exchange,
                     tag="entry",
                 )
-                logging.debug(bargs)
                 resp = Helper.one_side(bargs)
                 if resp:
                     self._id = resp
                     self._place_sell_order()
                     self._fn = "find_fill_price"
+                else:
+                    logging.error(f"unable to place order for {bargs}")
         except Exception as e:
             print(f"{e} while waiting for breakout")
 
@@ -140,6 +142,8 @@ class EnterAndExit:
                         f"{self._symbol} STOP LOSS #{self._sell_order} is HIT"
                     )
                     flag = True
+                else:
+                    print(self._sell_order, "is compared with", order["order_id"])
         except Exception as e:
             logging.error(f"{e} get order from book{self._orders}")
             print_exc()
