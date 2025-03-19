@@ -118,7 +118,7 @@ class EnterAndExit:
 
         except Exception as e:
             print_exc()
-            print(f"{e} while set target")
+            logging.error(f"{e} while set target")
 
     def find_fill_price(self):
         try:
@@ -135,13 +135,13 @@ class EnterAndExit:
         try:
             flag = False
             for order in self._orders:
-                if self._sell_order["order_id"] == order["order_id"]:
+                if self._sell_order == int(order["order_id"]):
                     logging.debug(
-                        f"{self._symbol} target order {self._sell_order['order_id']} is reached"
+                        f"{self._symbol} STOP LOSS #{self._sell_order} is HIT"
                     )
                     flag = True
         except Exception as e:
-            logging.error(f"{e} get order from book")
+            logging.error(f"{e} get order from book{self._orders}")
             print_exc()
         finally:
             return flag
@@ -190,3 +190,21 @@ class EnterAndExit:
         except Exception as e:
             logging.error(f"{e} in run for buy order {self._id}")
             print_exc()
+
+
+if __name__ == "__main__":
+    from helper import Helper
+
+    def iter_tradebook(orders, search_id):
+        try:
+            for order in orders:
+                print(order)
+                if search_id == order["order_id"]:
+                    print(f"{search_id} is found")
+        except Exception as e:
+            logging.error(f"{e} get order from book")
+            print_exc()
+
+    Helper.api
+    resp = Helper.trades()
+    iter_tradebook(resp, "25031900397534")
