@@ -11,6 +11,7 @@ from constants import O_CNFG, logging, O_SETG
 import pendulum as pdlm
 from toolkit.kokoo import blink, timer
 from wserver import Wserver
+from paper import Paper
 
 
 def find_underlying(symbol):
@@ -48,7 +49,11 @@ def send_messages(msg):
 
 
 def login():
-    api = Finvasia(**O_CNFG)
+
+    if O_SETG["trade"].get("live", 0) == 0:
+        api = Paper(**O_CNFG)
+    else:
+        api = Finvasia(**O_CNFG)
     if api.authenticate():
         message = "api connected"
         send_messages(message)

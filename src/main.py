@@ -150,14 +150,14 @@ def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
 
 def main():
     try:
-        while not is_time_past(O_SETG["trade"]["start"]):
-            print(f"waiting till {O_SETG['trade']['start']}")
-
         # login to broker api
         Helper.api
 
         # get user selected symbols to trade
         symbols_to_trade = get_symbols_to_trade()
+
+        while not is_time_past(O_SETG["trade"]["start"]):
+            print(f"waiting till {O_SETG['trade']['start']}")
 
         # get all the tokens we will be trading
         Helper.tokens_for_all_trading_symbols = find_instrument_tokens_to_trade(

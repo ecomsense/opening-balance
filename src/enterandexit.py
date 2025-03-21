@@ -84,6 +84,7 @@ class EnterAndExit:
                 order_type="SL-LMT",
                 exchange=self._exchange,
                 tag="exit",
+                last_price=self._ltp,
             )
             logging.debug(sargs)
             self._sell_order = Helper.one_side(sargs)
