@@ -91,8 +91,11 @@ def set_logger():
         based on user choice from settings
     """
     level = O_SETG["log"]["level"]
-    if O_SETG["log"]["show"]:
+    is_show = O_SETG["log"]["show"]
+    if is_show > 0:
+        print(f"log show {is_show} is True")
         return Logger(level)
+    print(f"log show {is_show} FALSE")
     return Logger(level, S_LOG)
 
 

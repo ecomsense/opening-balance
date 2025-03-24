@@ -17,7 +17,7 @@ class Paper(Finvasia):
         "symbol",
         "remarks",
         "status",
-        "average_price",
+        "fill_price",
         "last_price",
     ]
     _orders = pd.DataFrame()
@@ -29,7 +29,7 @@ class Paper(Finvasia):
         Flag = False
         orders = self.orders
         for order in orders:
-            if order["order_id"] == order_id and ltp < order["average_price"]:
+            if order["order_id"] == order_id and ltp < order["fill_price"]:
                 Flag = True
                 break
 
@@ -62,6 +62,7 @@ class Paper(Finvasia):
 
     def order_place(self, **position_dict):
         try:
+            logging.info(f"order place position dict {position_dict}")
             if not position_dict.get("order_id", None):
                 order_id = generate_unique_id()
             else:
@@ -71,7 +72,7 @@ class Paper(Finvasia):
                 position_dict["order_type"][0].upper() == "M"
                 or position_dict["order_type"][0].upper() == "L"
             )
-            average_price = (
+            fill_price = (
                 position_dict["last_price"]
                 if is_trade
                 else position_dict["trigger_price"]
@@ -84,7 +85,7 @@ class Paper(Finvasia):
                 filled_quantity=int(position_dict["quantity"]),
                 symbol=position_dict["symbol"],
                 remarks=position_dict["tag"],
-                average_price=average_price,
+                fill_price=fill_price,
                 status=status,
                 last_price=position_dict["last_price"],
             )
@@ -124,17 +125,17 @@ class Paper(Finvasia):
         # Filter DataFrame to include only 'S' (Sell) side transactions
         sell_df = df[df["side"] == "SELL"]
 
-        # Group by 'symbol' and sum 'filled_quantity' and 'average_price' for 'B' side transactions
+        # Group by 'symbol' and sum 'filled_quantity' and 'fill_price' for 'B' side transactions
         buy_grouped = (
             buy_df.groupby("symbol")
-            .agg({"filled_quantity": "sum", "average_price": "sum"})
+            .agg({"filled_quantity": "sum", "fill_price": "sum"})
             .reset_index()
         )
 
-        # Group by 'symbol' and sum 'filled_quantity' and 'average_price' for 'S' side transactions
+        # Group by 'symbol' and sum 'filled_quantity' and 'fill_price' for 'S' side transactions
         sell_grouped = (
             sell_df.groupby("symbol")
-            .agg({"filled_quantity": "sum", "average_price": "sum"})
+            .agg({"filled_quantity": "sum", "fill_price": "sum"})
             .reset_index()
         )
 
@@ -160,8 +161,7 @@ class Paper(Finvasia):
             lambda row: (
                 0
                 if row["quantity"] == 0
-                else (row["average_price_buy"] - row["average_price_sell"])
-                * row["quantity"]
+                else (row["fill_price_buy"] - row["fill_price_sell"]) * row["quantity"]
             ),
             axis=1,
         )
@@ -169,7 +169,7 @@ class Paper(Finvasia):
         # Calculate the realized profit and loss (rpnl)
         result_df["rpnl"] = result_df.apply(
             lambda row: (
-                row["average_price_sell"] - row["average_price_buy"]
+                row["fill_price_sell"] - row["fill_price_buy"]
                 if row["quantity"] == 0
                 else 0
             ),
@@ -181,8 +181,8 @@ class Paper(Finvasia):
             columns=[
                 "filled_quantity_buy",
                 "filled_quantity_sell",
-                "average_price_buy",
-                "average_price_sell",
+                "fill_price_buy",
+                "fill_price_sell",
             ],
             inplace=True,
         )

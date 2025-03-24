@@ -175,6 +175,7 @@ class Helper:
     def one_side(cls, bargs):
         try:
             bargs = make_order_place_args(**bargs)
+            logging.debug(f"one side order place {bargs}")
             resp = cls.api.order_place(**bargs)
             return resp
         except Exception as e:
