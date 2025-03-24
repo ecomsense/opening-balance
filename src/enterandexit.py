@@ -94,9 +94,7 @@ class EnterAndExit:
                 logging.error(f"Invalid sell order response: {self._sell_order}")
                 __import__("sys").exit(1)
             else:
-                logging.info(
-                    f"TARGET order for {self._buy_order} is {self._sell_order}"
-                )
+                logging.info(f"TARGET order for {self._id} is {self._sell_order}")
 
         except Exception as e:
             logging.error(f"{e} while place sell order")
@@ -139,10 +137,9 @@ class EnterAndExit:
             flag = False
             if O_SETG["trade"].get("live", 0) == 0:
                 flag = Helper.api.can_move_order_to_trade(self._sell_order, self._ltp)
-                if flag:
-                    return flag
+                return flag
             for order in self._orders:
-                if self._sell_order == int(order["order_id"]):
+                if self._sell_order == order["order_id"]:
                     logging.debug(
                         f"{self._symbol} STOP LOSS #{self._sell_order} is HIT"
                     )

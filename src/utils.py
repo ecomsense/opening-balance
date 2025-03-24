@@ -1,4 +1,5 @@
 import random
+import string
 from functools import wraps
 from traceback import print_exc
 
@@ -38,9 +39,9 @@ def generate_unique_id():
     # Get the current timestamp
     timestamp = plum.now().format("YYYYMMDDHHmmssSSS")
 
-    # Generate a random 6-digit number
-    random_num = random.randint(100000, 999999)
+    # Generate a random string of 6 characters
+    random_str = "".join(random.choices(string.ascii_letters + string.digits, k=6))
 
-    # Combine timestamp and random number into a single integer
-    unique_id = int(f"{timestamp}{random_num}")
+    # Combine the timestamp with the random string to form the unique ID
+    unique_id = f"{timestamp}_{random_str}"
     return unique_id

@@ -68,10 +68,8 @@ class Paper(Finvasia):
             else:
                 order_id = position_dict["order_id"]
 
-            is_trade = (
-                position_dict["order_type"][0].upper() == "M"
-                or position_dict["order_type"][0].upper() == "L"
-            )
+            UPPER = position_dict["order_id"][0].upper()
+            is_trade = UPPER == "M" or UPPER == "L"
             fill_price = (
                 position_dict["last_price"]
                 if is_trade
@@ -94,6 +92,7 @@ class Paper(Finvasia):
             if not self._orders.empty:
                 df = pd.concat([self._orders, df], ignore_index=True)
             self._orders = df
+            _ = self.orders
 
             return order_id
         except Exception as e:
@@ -104,7 +103,8 @@ class Paper(Finvasia):
         if not args.get("order_type", None):
             args["order_type"] = "MARKET"
 
-        if args["order_type"][0].upper() == "M":
+        UPPER = args["order_type"][0].upper()
+        if UPPER == "M" or UPPER == "L":
             # drop row whose order_id matches
             args["tag"] = "modify"
             self._orders = self._orders[self._orders["order_id"] != args["order_id"]]
