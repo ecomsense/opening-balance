@@ -1,6 +1,6 @@
 from utils import generate_unique_id
 from stock_brokers.finvasia.finvasia import Finvasia
-from constants import S_DATA, O_FUTL, logging
+from constants import O_CNFG, S_DATA, O_FUTL, logging
 import pandas as pd
 import pendulum as plum
 from traceback import print_exc
@@ -16,9 +16,38 @@ class Paper(Finvasia):
         "filled_quantity",
         "symbol",
         "remarks",
+        "status",
         "average_price",
+        "last_price",
     ]
     _orders = pd.DataFrame()
+
+    def can_move_order_to_trade(self, order_id, ltp) -> bool:
+        # TODO
+        # move order_id to tradebook
+        # if order trigger price is below ltp
+        Flag = False
+        orders = self.orders
+        for order in orders:
+            if order["order_id"] == order_id and ltp < order["average_price"]:
+                Flag = True
+                break
+
+        if Flag:
+            self._orders.loc[
+                self._orders["order_id"] == order["order_id"], "status"
+            ] = "COMPLETE"
+
+        return Flag
+
+    @property
+    def trades(self):
+        """returns order book with status COMPLETE"""
+        if not self._orders.empty:
+            filtered_df = self._orders[self._orders["status"] == "COMPLETE"]
+            return filtered_df.to_dict(orient="records")
+        else:
+            return [{}]
 
     def __init__(self, user_id, password, pin, vendor_code, app_key, imei, broker=""):
         super().__init__(user_id, password, pin, vendor_code, app_key, imei, broker)
@@ -38,16 +67,16 @@ class Paper(Finvasia):
             else:
                 order_id = position_dict["order_id"]
 
+            is_trade = (
+                position_dict["order_type"][0].upper() == "M"
+                or position_dict["order_type"][0].upper() == "L"
+            )
             average_price = (
                 position_dict["last_price"]
-                if position_dict["order_type"][0].upper() == "M"
+                if is_trade
                 else position_dict["trigger_price"]
             )
-            status = (
-                "COMPLETE"
-                if position_dict["order_type"][0].upper() == "M"
-                else "TRIGGER PENDING"
-            )
+            status = "COMPLETE" if is_trade else "TRIGGER PENDING"
             args = dict(
                 order_id=order_id,
                 broker_timestamp=plum.now().format("YYYY-MM-DD HH:mm:ss"),
@@ -57,12 +86,14 @@ class Paper(Finvasia):
                 remarks=position_dict["tag"],
                 average_price=average_price,
                 status=status,
+                last_price=position_dict["last_price"],
             )
             df = pd.DataFrame(columns=self.cols, data=[args])
 
             if not self._orders.empty:
                 df = pd.concat([self._orders, df], ignore_index=True)
             self._orders = df
+
             return order_id
         except Exception as e:
             logging.error(f"{e} exception while placing order")
@@ -174,3 +205,18 @@ class Paper(Finvasia):
             logging.debug(f"paper positions error: {e}")
         finally:
             return lst
+
+
+if __name__ == "__main__":
+    from constants import O_CNFG
+
+    paper = Paper(**O_CNFG)
+    paper.order_place(
+        symbol="NIFTY",
+        exchange="NSE",
+        quantity=1,
+        side="BUY",
+        product="MIS",
+        order_type="MARKET",
+        tag="test",
+    )

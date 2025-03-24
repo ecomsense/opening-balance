@@ -25,6 +25,6 @@ NIFTY:
   base: NIFTY
   option_exchange: NFO
   moneyness: -1       # 0=atm 1=otm -1=itm
-  expiry: 20MAR25
+  expiry: 27MAR25
   quantity: 75
   target: 5

@@ -5,8 +5,7 @@ Buy will be manual  and sell will be algo with both target and stoploss.
 Multiple trades will be triggered and to be tracked separetely.
 """
 
-from logging import raiseExceptions
-from constants import logging
+from constants import logging, O_SETG
 from helper import Helper
 from traceback import print_exc
 from timemanager import TimeManager
@@ -60,6 +59,7 @@ class EnterAndExit:
                     order_type="LMT",
                     exchange=self._exchange,
                     tag="entry",
+                    last_price=self._ltp,
                 )
                 resp = Helper.one_side(bargs)
                 if resp:
@@ -137,6 +137,10 @@ class EnterAndExit:
     def _is_stoploss_hit(self):
         try:
             flag = False
+            if O_SETG["trade"].get("live", 0) == 0:
+                flag = Helper.api.can_move_order_to_trade(self._sell_order, self._ltp)
+                if flag:
+                    return flag
             for order in self._orders:
                 if self._sell_order == int(order["order_id"]):
                     logging.debug(
@@ -145,11 +149,10 @@ class EnterAndExit:
                     flag = True
                 else:
                     print(self._sell_order, "is compared with", order["order_id"])
+            return flag
         except Exception as e:
             logging.error(f"{e} get order from book{self._orders}")
             print_exc()
-        finally:
-            return flag
 
     def exit_order(self):
         try:
@@ -167,6 +170,7 @@ class EnterAndExit:
                     order_type="LIMIT",
                     price=round(exit_virtual / 0.05) * 0.05,
                     trigger_price=0.00,
+                    last_price=self._ltp,
                 )
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
