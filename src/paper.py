@@ -56,17 +56,21 @@ class Paper(Finvasia):
 
     @property
     def orders(self):
-        list_of_orders = self._orders
-        pd.DataFrame(list_of_orders).to_csv(ORDER_CSV, index=False)
-        return list_of_orders.to_dict(orient="records")
+        try:
+            list_of_orders = self._orders
+            pd.DataFrame(list_of_orders).to_csv(ORDER_CSV, index=False)
+            return list_of_orders.to_dict(orient="records")
+        except Exception as e:
+            logging.error(f"{e} while returning trades")
 
     def order_place(self, **position_dict):
         try:
-            logging.info(f"order place position dict {position_dict}")
             if not position_dict.get("order_id", None):
                 order_id = generate_unique_id()
+                ops = "PLACE"
             else:
                 order_id = position_dict["order_id"]
+                ops = "MODIFY"
 
             UPPER = position_dict["order_type"][0].upper()
             is_trade = UPPER == "M" or UPPER == "L"
@@ -76,6 +80,7 @@ class Paper(Finvasia):
                 else position_dict["trigger_price"]
             )
             status = "COMPLETE" if is_trade else "TRIGGER PENDING"
+            print("statusssssssssssssssssss is", status)
             args = dict(
                 order_id=order_id,
                 broker_timestamp=plum.now().format("YYYY-MM-DD HH:mm:ss"),
@@ -87,7 +92,7 @@ class Paper(Finvasia):
                 status=status,
                 last_price=position_dict["last_price"],
             )
-            logging.info(f"placing order {args}")
+            logging.info(f"{ops} order {args}")
             df = pd.DataFrame(columns=self.cols, data=[args])
 
             if not self._orders.empty:
@@ -100,24 +105,27 @@ class Paper(Finvasia):
             logging.error(f"{e} exception while placing order")
             print_exc()
 
-    def order_modify(self, args):
-        if not args.get("order_type", None):
-            args["order_type"] = "MARKET"
+    def order_modify(self, **args):
+        try:
+            if not args.get("order_type", None):
+                args["order_type"] = "MARKET"
 
-        UPPER = args["order_type"][0].upper()
-        if UPPER == "M" or UPPER == "L":
-            # drop row whose order_id matches
-            args["tag"] = "modify"
-            self._orders = self._orders[self._orders["order_id"] != args["order_id"]]
-            self.order_place(**args)
-        else:
-            logging.info(
-                "order modify for other order types not implemented for paper trading"
-            )
-            # TODO FIX THIS
-            raise NotImplementedError(
-                "order modify for other order types not implemented"
-            )
+            UPPER = args["order_type"][0].upper()
+            if UPPER == "M" or UPPER == "L":
+                # drop row whose order_id matches
+                self._orders = self._orders[
+                    self._orders["order_id"] != args["order_id"]
+                ]
+                print("*************************", args)
+                order_id = self.order_place(**args)
+                return order_id
+            else:
+                logging.warning(
+                    "order modify for other order types not implemented for paper trading"
+                )
+        except Exception as e:
+            logging.error(f"{e} order modify")
+            print_exc()
 
     def _ord_to_pos(self, df):
         # Filter DataFrame to include only 'B' (Buy) side transactions
@@ -209,15 +217,42 @@ class Paper(Finvasia):
 
 
 if __name__ == "__main__":
-    from constants import O_CNFG
+    try:
+        from constants import O_CNFG
 
-    paper = Paper(**O_CNFG)
-    paper.order_place(
-        symbol="NIFTY",
-        exchange="NSE",
-        quantity=1,
-        side="BUY",
-        product="MIS",
-        order_type="MARKET",
-        tag="test",
-    )
+        paper = Paper(**O_CNFG)
+        args = dict(
+            symbol="NIFTY",
+            exchange="NSE",
+            quantity=1,
+            side="BUY",
+            price=20,
+            trigger_price=21,
+            product="MIS",
+            order_type="MARKET",
+            last_price=10,
+            tag="entry",
+        )
+        # buy order
+        resp = paper.order_place(**args)
+        print(f"order place resp {resp}")
+        # sell order
+        sargs = args.copy()
+        sargs["side"] = "SELL"
+        sargs["order_type"] = "SL"
+        sargs["tag"] = "stoploss"
+        resp = paper.order_place(**sargs)
+
+        # sell modfy
+        sargs["order_id"] = resp
+        sargs["order_type"] = "Limit"
+        sargs["tag"] = "target"
+        resp = paper.order_modify(**sargs)
+        print(f"order modify resp {resp}")
+
+        # buy order
+        resp = paper.order_place(**args)
+        print(f"order place resp {resp}")
+        print(paper.orders)
+    except Exception as e:
+        print(e)
