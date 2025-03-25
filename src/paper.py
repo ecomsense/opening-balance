@@ -68,7 +68,7 @@ class Paper(Finvasia):
             else:
                 order_id = position_dict["order_id"]
 
-            UPPER = position_dict["order_id"][0].upper()
+            UPPER = position_dict["order_type"][0].upper()
             is_trade = UPPER == "M" or UPPER == "L"
             fill_price = (
                 position_dict["last_price"]
@@ -87,6 +87,7 @@ class Paper(Finvasia):
                 status=status,
                 last_price=position_dict["last_price"],
             )
+            logging.info(f"placing order {args}")
             df = pd.DataFrame(columns=self.cols, data=[args])
 
             if not self._orders.empty:
