@@ -165,7 +165,8 @@ class EnterAndExit:
                 args = dict(
                     symbol=self._buy_order["symbol"],
                     order_id=self._sell_order,
-                    exchange=self._buy_order["exchange"],
+                    # remove buy order exchange
+                    exchange=self._exchange,
                     quantity=abs(int(self._buy_order["quantity"])),
                     order_type="LIMIT",
                     price=round(exit_virtual / 0.05) * 0.05,
