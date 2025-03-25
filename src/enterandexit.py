@@ -168,7 +168,7 @@ class EnterAndExit:
                     order_id=self._sell_order,
                     # remove buy order exchange
                     exchange=self._exchange,
-                    quantity=abs(int(self._buy_order["quantity"])),
+                    quantity=self._quantity,
                     order_type="LIMIT",
                     price=round(exit_virtual / 0.05) * 0.05,
                     trigger_price=0.00,
