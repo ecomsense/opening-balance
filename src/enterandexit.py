@@ -103,7 +103,9 @@ class EnterAndExit:
     def _set_target(self):
         try:
             rate_to_be_added = 0
+            """
             resp = Helper.positions()
+                todo
             if resp and any(resp):
                 total_rpnl = sum(
                     item["rpnl"]
@@ -112,6 +114,7 @@ class EnterAndExit:
                 )
                 if total_rpnl < 0:
                     rate_to_be_added = total_rpnl / self._quantity
+            """
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer - rate_to_be_added
             self._target = round(target_virtual / 0.05) * 0.05
