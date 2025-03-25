@@ -19,6 +19,7 @@ class EnterAndExit:
     _sell_order = None
     _orders = []
     _is_trading_below_low = False
+    _target_price = None
     _time_mgr = TimeManager()
 
     def __init__(
@@ -83,7 +84,7 @@ class EnterAndExit:
                 trigger_price=self._low,
                 order_type="SL-LMT",
                 exchange=self._exchange,
-                tag="exit",
+                tag="stoploss",
                 last_price=self._ltp,
             )
             logging.debug(sargs)
@@ -117,7 +118,7 @@ class EnterAndExit:
             """
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer - rate_to_be_added
-            self._target = round(target_virtual / 0.05) * 0.05
+            self._target_price = round(target_virtual / 0.05) * 0.05
             self._fn = "exit_order"
 
         except Exception as e:
@@ -159,7 +160,7 @@ class EnterAndExit:
             FLAG = False
             if self._is_stoploss_hit():
                 FLAG = True
-            elif self._ltp >= self._target:
+            elif self._ltp >= self._target_price:
                 exit_buffer = 2 * self._ltp / 100
                 exit_virtual = self._ltp - exit_buffer
                 args = dict(
@@ -172,6 +173,7 @@ class EnterAndExit:
                     price=round(exit_virtual / 0.05) * 0.05,
                     trigger_price=0.00,
                     last_price=self._ltp,
+                    tag="target_reached",
                 )
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
@@ -183,7 +185,9 @@ class EnterAndExit:
                 self._is_trading_below_low = False
                 self._fn = "is_trading_below_low"
             else:
-                logging.debug(f"target: {self._target} < {self._ltp}")
+                logging.debug(
+                    f"{self._symbol} target: {self._target_price} < {self._ltp}"
+                )
 
         except Exception as e:
             logging.error(f"{e} while exit order")
