@@ -148,8 +148,7 @@ class EnterAndExit:
                         f"{self._symbol} STOP LOSS #{self._sell_order} is HIT"
                     )
                     flag = True
-                else:
-                    print(self._sell_order, "is compared with", order["order_id"])
+                    break
             return flag
         except Exception as e:
             logging.error(f"{e} get order from book{self._orders}")
@@ -164,16 +163,18 @@ class EnterAndExit:
                 exit_buffer = 2 * self._ltp / 100
                 exit_virtual = self._ltp - exit_buffer
                 args = dict(
-                    symbol=self._buy_order["symbol"],
-                    order_id=self._sell_order,
-                    # remove buy order exchange
-                    exchange=self._exchange,
+                    symbol=self._symbol,
                     quantity=self._quantity,
-                    order_type="LIMIT",
+                    disclosed_quantity=0,
+                    product="M",
+                    side="S",
                     price=round(exit_virtual / 0.05) * 0.05,
-                    trigger_price=0.00,
-                    last_price=self._ltp,
+                    trigger_price=0.0,
+                    order_type="LIMIT",
+                    exchange=self._exchange,
                     tag="target_reached",
+                    last_price=self._ltp,
+                    order_id=self._sell_order,
                 )
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
@@ -186,7 +187,7 @@ class EnterAndExit:
                 self._fn = "is_trading_below_low"
             else:
                 logging.debug(
-                    f"{self._symbol} target: {self._target_price} < {self._ltp}"
+                    f"{self._symbol} target: {self._target_price} < {self._ltp} > sl: {self._low}"
                 )
 
         except Exception as e:

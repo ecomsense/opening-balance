@@ -80,7 +80,6 @@ class Paper(Finvasia):
                 else position_dict["trigger_price"]
             )
             status = "COMPLETE" if is_trade else "TRIGGER PENDING"
-            print("statusssssssssssssssssss is", status)
             args = dict(
                 order_id=order_id,
                 broker_timestamp=plum.now().format("YYYY-MM-DD HH:mm:ss"),
