@@ -29,8 +29,9 @@ class EnterAndExit:
         low: float,
         ltp: float,
         exchange: str,
-        quantity: int,
         target: float,
+        quantity: int,
+        txn: int,
     ):
         self._prefix = prefix
         self._symbol = symbol
@@ -40,6 +41,7 @@ class EnterAndExit:
         self._exchange = exchange
         self._target = target
         self._quantity = quantity
+        self._txn = txn
         self._fn = "is_trading_below_low"
 
     def is_trading_below_low(self) -> bool:
@@ -104,9 +106,7 @@ class EnterAndExit:
     def _set_target(self):
         try:
             rate_to_be_added = 0
-            """
             resp = Helper.positions()
-                todo
             if resp and any(resp):
                 total_rpnl = sum(
                     item["rpnl"]
@@ -114,8 +114,16 @@ class EnterAndExit:
                     if item["symbol"].startswith(self._prefix)
                 )
                 if total_rpnl < 0:
+                    count = len(
+                        [
+                            order
+                            for order in self._orders
+                            if order["symbol"].startswith(self._prefix)
+                        ]
+                    )
                     rate_to_be_added = total_rpnl / self._quantity
-            """
+                    rate_to_be_added += count * self._txn / 2
+
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer - rate_to_be_added
             self._target_price = round(target_virtual / 0.05) * 0.05
@@ -186,9 +194,11 @@ class EnterAndExit:
                 self._is_trading_below_low = False
                 self._fn = "is_trading_below_low"
             else:
-                logging.debug(
-                    f"{self._symbol} target: {self._target_price} < {self._ltp} > sl: {self._low}"
+                msg = (
+                    f"{self._symbol} target: {self._target_price} < {self._ltp} > sl: {self._low} "
+                    f"Remaining to target: {int(((self._target_price - self._ltp) / (self._target_price - self._low)) * 100)}%"
                 )
+                logging.info(msg)
 
         except Exception as e:
             logging.error(f"{e} while exit order")

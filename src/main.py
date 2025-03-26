@@ -140,6 +140,7 @@ def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
                     exchange=v["option_exchange"],
                     quantity=v["quantity"],
                     target=v["target"],
+                    txn=v["txn"],
                 )
                 strategies.append(strgy)
         return strategies

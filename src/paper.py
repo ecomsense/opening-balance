@@ -126,65 +126,69 @@ class Paper(Finvasia):
             logging.error(f"{e} order modify")
             print_exc()
 
-    def _ord_to_pos(self, df):
-        # Filter DataFrame to include only 'B' (Buy) side transactions
-        buy_df = df[df["side"] == "BUY"]
+    def calculate_realized_profit(self, df):
+        # Separate buy and sell transactions
+        buy_df = df[df["side"].str[0].str.upper() == "B"]
+        sell_df = df[df["side"].str[0].str.upper() == "S"]
 
-        # Filter DataFrame to include only 'S' (Sell) side transactions
-        sell_df = df[df["side"] == "SELL"]
-
-        # Group by 'symbol' and sum 'filled_quantity' and 'fill_price' for 'B' side transactions
+        # Group by symbol and sum quantities and prices
         buy_grouped = (
             buy_df.groupby("symbol")
-            .agg({"filled_quantity": "sum", "fill_price": "sum"})
+            .agg({"filled_quantity": "sum", "fill_price": "sum", "last_price": "last"})
             .reset_index()
         )
-
-        # Group by 'symbol' and sum 'filled_quantity' and 'fill_price' for 'S' side transactions
         sell_grouped = (
             sell_df.groupby("symbol")
             .agg({"filled_quantity": "sum", "fill_price": "sum"})
             .reset_index()
         )
 
-        # Merge the two DataFrames on 'symbol' column with a left join
+        # Merge buy and sell data
         result_df = pd.merge(
             buy_grouped,
             sell_grouped,
             on="symbol",
             suffixes=("_buy", "_sell"),
             how="outer",
+        ).fillna(0)
+
+        # Calculate average buy and sell prices
+        result_df["avg_buy_price"] = (
+            result_df["fill_price_buy"] / result_df["filled_quantity_buy"]
         )
-        print(result_df)
-        # Fill NaN values with 0
+        result_df["avg_sell_price"] = (
+            result_df["fill_price_sell"] / result_df["filled_quantity_sell"]
+        )
+
+        # Avoid division errors (set NaN to 0 where needed)
         result_df.fillna(0, inplace=True)
+
+        # Compute total traded quantity using vectorized min()
+        result_df["total_traded_quantity"] = result_df[
+            ["filled_quantity_buy", "filled_quantity_sell"]
+        ].min(axis=1)
 
         # Calculate the net filled quantity by subtracting 'Sell' side quantity from 'Buy' side quantity
         result_df["quantity"] = (
             result_df["filled_quantity_buy"] - result_df["filled_quantity_sell"]
         )
 
+        # Calculate realized profit (rpnl)
+        result_df["rpnl"] = result_df["total_traded_quantity"] * (
+            result_df["avg_sell_price"] - result_df["avg_buy_price"]
+        )
+
         # Calculate the unrealized mark-to-market (urmtom) value
         result_df["urmtom"] = result_df.apply(
             lambda row: (
-                0
-                if row["quantity"] == 0
-                else (row["fill_price_buy"] - row["fill_price_sell"]) * row["quantity"]
+                (row["last_price"] - row["avg_buy_price"]) * row["quantity"]
+                if row["quantity"] > 0
+                else (row["avg_sell_price"] - row["last_price"]) * abs(row["quantity"])
             ),
             axis=1,
         )
 
-        # Calculate the realized profit and loss (rpnl)
-        result_df["rpnl"] = result_df.apply(
-            lambda row: (
-                row["fill_price_sell"] - row["fill_price_buy"]
-                if row["quantity"] == 0
-                else 0
-            ),
-            axis=1,
-        )
-
-        # Drop intermediate columns
+        # Drop unnecessary columns
         result_df.drop(
             columns=[
                 "filled_quantity_buy",
@@ -194,21 +198,18 @@ class Paper(Finvasia):
             ],
             inplace=True,
         )
-
         return result_df
 
     @property
     def positions(self):
         try:
             lst = []
-            if __import__("os").path.getsize(ORDER_CSV) > 2:
-                print(__import__("os").path.getsize(ORDER_CSV))
-                df = pd.read_csv(ORDER_CSV)
-                if not df.empty:
-                    logging.info("df not empty")
-                    df = self._ord_to_pos(df)
-                    print(df)
-                    lst = df.to_dict(orient="records")
+            resp = self.trades
+            if resp and any(resp):
+                df = pd.DataFrame(resp)
+                print(df)
+                df = self.calculate_realized_profit(df)
+                lst = df.to_dict(orient="records")
         except Exception as e:
             logging.debug(f"paper positions error: {e}")
         finally:
@@ -229,7 +230,7 @@ if __name__ == "__main__":
             trigger_price=21,
             product="MIS",
             order_type="MARKET",
-            last_price=10,
+            last_price=20,
             tag="entry",
         )
         # buy order
@@ -245,6 +246,9 @@ if __name__ == "__main__":
         # sell modfy
         sargs["order_id"] = resp
         sargs["order_type"] = "Limit"
+        sargs["price"] = 0
+        sargs["trigger_price"] = 50
+        sargs["last_price"] = 51
         sargs["tag"] = "target"
         resp = paper.order_modify(**sargs)
         print(f"order modify resp {resp}")
@@ -253,5 +257,8 @@ if __name__ == "__main__":
         resp = paper.order_place(**args)
         print(f"order place resp {resp}")
         print(paper.orders)
+
+        result = paper.positions
+        print(result)
     except Exception as e:
         print(e)
