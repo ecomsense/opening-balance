@@ -107,7 +107,8 @@ def find_trading_symbol_to_trade(
                 )
                 return symbol_info
             else:
-                raise Exception(f"History {resp} is empty for {k}")
+                exc = f"History {resp} is empty for {exchange=} and {token=}"
+                raise Exception(exc)
         return {}
     except Exception as e:
         logging.error(f"{e} while finding the trading symbol")
@@ -135,17 +136,20 @@ def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
             for option_type in lst_of_option_type:
                 symbol_item = {k: v}
                 symbol_info = find_trading_symbol_to_trade(option_type, symbol_item)
-                strgy = EnterAndExit(
-                    prefix=k,
-                    symbol=symbol_info["symbol"],
-                    low=float(symbol_info["low"]),
-                    ltp=symbol_info["ltp"],
-                    exchange=v["option_exchange"],
-                    quantity=v["quantity"],
-                    target=v["target"],
-                    txn=v["txn"],
-                )
-                strategies.append(strgy)
+                if any(symbol_info):
+                    strgy = EnterAndExit(
+                        prefix=k,
+                        symbol=symbol_info["symbol"],
+                        low=float(symbol_info["low"]),
+                        ltp=symbol_info["ltp"],
+                        exchange=v["option_exchange"],
+                        quantity=v["quantity"],
+                        target=v["target"],
+                        txn=v["txn"],
+                    )
+                    strategies.append(strgy)
+                else:
+                    raise Exception(f"Could not find trading symbol for {symbol_item}")
         return strategies
     except Exception as e:
         logging.error(f"{e} while creating the strategies")
