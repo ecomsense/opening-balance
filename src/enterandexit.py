@@ -172,7 +172,7 @@ class EnterAndExit:
             disclosed_quantity=0,
             product="M",
             side="S",
-            price =round(exit_virtual / 0.05) * 0.05,
+            price=round(exit_virtual / 0.05) * 0.05,
             trigger_price=0.0,
             order_type="LIMIT",
             exchange=self._exchange,
@@ -210,15 +210,14 @@ class EnterAndExit:
 
     def remove_me(self):
         logging.info("FLAGGED FOR REMOVING")
-        if self._fn ==  "try_exiting_trade":
+        if self._fn == "try_exiting_trade":
             args = self._get_modify_params()
             args["tag"] = "removing"
             resp = Helper.modify_order(args)
             logging.debug(f"order id: {args['order_id']} modify {resp=}")
-        
+
         self._removable = True
         self._fn = "remove_me"
-
 
     def run(self, orders, ltps, prefixes: list):
         try:
@@ -226,8 +225,8 @@ class EnterAndExit:
             ltp = ltps.get(self._symbol, None)
             if ltp is not None:
                 self._ltp = float(ltp)
-            if self._pfx in prefixes:
-
+            if self._prefix in prefixes:
+                self.remove_me()
             result = getattr(self, self._fn)()
             return result
         except Exception as e:
