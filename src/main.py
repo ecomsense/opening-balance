@@ -90,21 +90,24 @@ def find_trading_symbol_to_trade(
             exchange = dct_sym[k]["exchange"]
             token = dct_sym[k]["token"]
             resp = Helper.history(exchange, token)
-            low = resp[-1]["intl"]
-            # find from ltp
-            atm = sym.get_atm(float(low))
-            # find tokens from ltp
-            logging.info(f"atm {atm} for underlying {k} from {low}")
-            result = sym.find_option_by_distance(
-                atm=atm,
-                distance=v["moneyness"],
-                c_or_p=ce_or_pe,
-                dct_symbols=Helper.tokens_for_all_trading_symbols,
-            )
-            symbol_info: dict[str, Any] = Helper.symbol_info(
-                v["option_exchange"], result["symbol"]
-            )
-            return symbol_info
+            if resp and any(resp):
+                low = resp[-1]["intl"]
+                # find from ltp
+                atm = sym.get_atm(float(low))
+                # find tokens from ltp
+                logging.info(f"atm {atm} for underlying {k} from {low}")
+                result = sym.find_option_by_distance(
+                    atm=atm,
+                    distance=v["moneyness"],
+                    c_or_p=ce_or_pe,
+                    dct_symbols=Helper.tokens_for_all_trading_symbols,
+                )
+                symbol_info: dict[str, Any] = Helper.symbol_info(
+                    v["option_exchange"], result["symbol"]
+                )
+                return symbol_info
+            else:
+                raise Exception(f"History {resp} is empty for {k}")
         return {}
     except Exception as e:
         logging.error(f"{e} while finding the trading symbol")
