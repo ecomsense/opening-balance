@@ -36,7 +36,6 @@ dct_sym = {
         "diff": 5,
         "index": "Natural gas current month future",
         "exchange": "MCX",
-        "token": "440248",
         "depth": 10,
     },
 }

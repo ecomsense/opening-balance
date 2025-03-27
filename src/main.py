@@ -1,7 +1,7 @@
 from constants import logging, O_SETG
 from helper import Helper
 from enterandexit import EnterAndExit
-from toolkit.kokoo import is_time_past, timer
+from toolkit.kokoo import is_time_past
 from traceback import print_exc
 from symbols import Symbols, dct_sym
 from typing import Any, Literal
@@ -25,11 +25,22 @@ def get_symbols_to_trade() -> dict[str, Any]:
     """
     try:
         black_list = ["log", "trade", "target", "MCX"]
-        symbols_to_trade = {k: v for k, v in O_SETG.items() if k not in black_list}
-        logging.info(symbols_to_trade)
+        symbols_to_trade = {
+            k: user_settings
+            for k, user_settings in O_SETG.items()
+            if k not in black_list
+        }
+        # find instrument token for underlying if it is no thter in Smbols
+        for k, user_settings in symbols_to_trade.items():
+            token = dct_sym[k].get("token", None)
+            if not token:
+                symbol = k + user_settings["future_expiry"]
+                exchange = user_settings["option_exchange"]
+                underlying_future = Helper.symbol_info(exchange, symbol)
+                dct_sym[k]["token"] = underlying_future["key"].split("|")[1]
         return symbols_to_trade
     except Exception as e:
-        logging.error(f"{e} while init")
+        logging.error(f"{e} while get symbols to trade")
         return {}
 
 
@@ -39,11 +50,11 @@ def find_instrument_tokens_to_trade(symbols_to_trade) -> dict[str, Any]:
     """
     try:
         tokens_of_all_trading_symbols = {}
-        for k, v in symbols_to_trade.items():
+        for k, user_settings in symbols_to_trade.items():
             sym = Symbols(
-                option_exchange=v["option_exchange"],
-                base=v["base"],
-                expiry=v["expiry"],
+                option_exchange=user_settings["option_exchange"],
+                base=user_settings["base"],
+                expiry=user_settings["expiry"],
             )
             sym.get_exchange_token_map_finvasia()
             # find ltp for underlying
@@ -62,11 +73,11 @@ def find_instrument_tokens_to_trade(symbols_to_trade) -> dict[str, Any]:
         return {}
 
 
-def find_trading_symbol_to_trade(
+def _find_trading_symbol(
     ce_or_pe: Literal["C", "P"], symbol_item: dict[str, Any]
 ) -> dict[str, Any]:
     """
-    find trading symbol to trade based on the atm given the
+    find trading symbol to trade based on the atm giuser_settingsen the
     symbol item
 
     Args:
@@ -81,29 +92,28 @@ def find_trading_symbol_to_trade(
 
     """
     try:
-        for k, v in symbol_item.items():
+        for keyword, user_settings in symbol_item.items():
             sym = Symbols(
-                option_exchange=v["option_exchange"],
-                base=v["base"],
-                expiry=v["expiry"],
+                option_exchange=user_settings["option_exchange"],
+                base=user_settings["base"],
+                expiry=user_settings["expiry"],
             )
-            exchange = dct_sym[k]["exchange"]
-            token = dct_sym[k]["token"]
+            exchange = dct_sym[keyword]["exchange"]
+            # TODO will be missing in futures
+            token = dct_sym[keyword]["token"]
             resp = Helper.history(exchange, token)
             if resp and any(resp):
                 low = resp[-1]["intl"]
-                # find from ltp
                 atm = sym.get_atm(float(low))
-                # find tokens from ltp
-                logging.info(f"atm {atm} for underlying {k} from {low}")
+                logging.info(f"atm {atm} for underlying {keyword} from {low}")
                 result = sym.find_option_by_distance(
                     atm=atm,
-                    distance=v["moneyness"],
+                    distance=user_settings["moneyness"],
                     c_or_p=ce_or_pe,
                     dct_symbols=Helper.tokens_for_all_trading_symbols,
                 )
                 symbol_info: dict[str, Any] = Helper.symbol_info(
-                    v["option_exchange"], result["symbol"]
+                    user_settings["option_exchange"], result["symbol"]
                 )
                 return symbol_info
             else:
@@ -131,25 +141,26 @@ def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
     """
     try:
         strategies = []
-        for k, v in symbols_to_trade.items():
+        for keyword, user_settings in symbols_to_trade.items():
             lst_of_option_type = ["C", "P"]
             for option_type in lst_of_option_type:
-                symbol_item = {k: v}
-                symbol_info = find_trading_symbol_to_trade(option_type, symbol_item)
+                symbol_info = _find_trading_symbol(
+                    option_type, {keyword: user_settings}
+                )
                 if any(symbol_info):
                     strgy = EnterAndExit(
-                        prefix=k,
+                        prefix=keyword,
                         symbol=symbol_info["symbol"],
                         low=float(symbol_info["low"]),
                         ltp=symbol_info["ltp"],
-                        exchange=v["option_exchange"],
-                        quantity=v["quantity"],
-                        target=v["target"],
-                        txn=v["txn"],
+                        exchange=user_settings["option_exchange"],
+                        quantity=user_settings["quantity"],
+                        target=user_settings["target"],
+                        txn=user_settings["txn"],
                     )
                     strategies.append(strgy)
                 else:
-                    raise Exception(f"Could not find trading symbol for {symbol_item}")
+                    logging.error(f"Could not find trading symbol for {keyword}")
         return strategies
     except Exception as e:
         logging.error(f"{e} while creating the strategies")
@@ -176,9 +187,14 @@ def main():
         strategies: list[EnterAndExit] = create_strategies(symbols_to_trade)
 
         while not is_time_past(O_SETG["trade"]["stop"]):
+            strgy_to_be_removed = []
             for strgy in strategies:
                 msg = f"{strgy._symbol} ltp:{strgy._ltp} low:{strgy._low} {strgy._fn}"
-                resp = strgy.run(Helper.trades(), Helper.get_quotes())
+                resp = strgy.run(
+                    Helper.trades(), Helper.get_quotes(), strgy_to_be_removed
+                )
+                if isinstance(resp, str):
+                    strgy_to_be_removed.append(resp)
                 logging.info(f"{msg} returned {resp}")
     except KeyboardInterrupt:
         __import__("sys").exit()

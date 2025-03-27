@@ -378,6 +378,9 @@ if __name__ == "__main__":
         resp = Helper.pnl("rpnl")
         print(resp)
 
+        rsp = Helper.history(exchange="MCX", token="447898")
+        print(rsp)
+
         # test_history(exchange="NFO", symbol="BANKNIFTY27MAR25C50000")
     except Exception as e:
         print(e)

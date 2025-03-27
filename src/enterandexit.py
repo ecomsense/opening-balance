@@ -20,6 +20,7 @@ class EnterAndExit:
     _orders = []
     _is_trading_below_low = False
     _target_price = None
+    _removable = False
     _time_mgr = TimeManager()
 
     def __init__(
@@ -127,7 +128,7 @@ class EnterAndExit:
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer - rate_to_be_added
             self._target_price = round(target_virtual / 0.05) * 0.05
-            self._fn = "exit_order"
+            self._fn = "try_exiting_trade"
 
         except Exception as e:
             print_exc()
@@ -162,28 +163,31 @@ class EnterAndExit:
             logging.error(f"{e} get order from book{self._orders}")
             print_exc()
 
-    def exit_order(self):
+    def _get_modify_params(self):
+        exit_buffer = 2 * self._ltp / 100
+        exit_virtual = self._ltp - exit_buffer
+        return dict(
+            symbol=self._symbol,
+            quantity=self._quantity,
+            disclosed_quantity=0,
+            product="M",
+            side="S",
+            price =round(exit_virtual / 0.05) * 0.05,
+            trigger_price=0.0,
+            order_type="LIMIT",
+            exchange=self._exchange,
+            tag="target_reached",
+            last_price=self._ltp,
+            order_id=self._sell_order,
+        )
+
+    def try_exiting_trade(self):
         try:
             FLAG = False
             if self._is_stoploss_hit():
                 FLAG = True
             elif self._ltp >= self._target_price:
-                exit_buffer = 2 * self._ltp / 100
-                exit_virtual = self._ltp - exit_buffer
-                args = dict(
-                    symbol=self._symbol,
-                    quantity=self._quantity,
-                    disclosed_quantity=0,
-                    product="M",
-                    side="S",
-                    price=round(exit_virtual / 0.05) * 0.05,
-                    trigger_price=0.0,
-                    order_type="LIMIT",
-                    exchange=self._exchange,
-                    tag="target_reached",
-                    last_price=self._ltp,
-                    order_id=self._sell_order,
-                )
+                args = self._get_modify_params()
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
                 logging.debug(f"order id: {args['order_id']} modify {resp=}")
@@ -204,12 +208,26 @@ class EnterAndExit:
             logging.error(f"{e} while exit order")
             print_exc()
 
-    def run(self, orders, ltps):
+    def remove_me(self):
+        logging.info("FLAGGED FOR REMOVING")
+        if self._fn ==  "try_exiting_trade":
+            args = self._get_modify_params()
+            args["tag"] = "removing"
+            resp = Helper.modify_order(args)
+            logging.debug(f"order id: {args['order_id']} modify {resp=}")
+        
+        self._removable = True
+        self._fn = "remove_me"
+
+
+    def run(self, orders, ltps, prefixes: list):
         try:
             self._orders = orders
             ltp = ltps.get(self._symbol, None)
             if ltp is not None:
                 self._ltp = float(ltp)
+            if self._pfx in prefixes:
+
             result = getattr(self, self._fn)()
             return result
         except Exception as e:
