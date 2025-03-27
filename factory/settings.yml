@@ -3,15 +3,16 @@ trade:
   start: "9:16"
   stop: "23:50"
   rest_min: 3
-  live: 0        # 0 for paper 1 for live
+  live: 0      # 0 for paper 1 for live
 NATURALGAS:
   base: NATURALGAS
   option_exchange: MCX
   moneyness: -1      # 0=atm 1=otm -1=itm
-  expiry: 24MAR25
+  expiry: 23APR25
   quantity: 1250
   target: 5
-  txn: 3             # points for each losing trade
+  txn: 0.5  # points for each losing trade
+  future_expiry: 25APR25 
 log:
   show: 0
   level: 10
