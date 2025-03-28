@@ -107,6 +107,7 @@ class EnterAndExit:
     def _set_target(self):
         try:
             rate_to_be_added = 0
+            logging.debug("setting target for {self._symbol}")
             resp = Helper.positions()
             if resp and any(resp):
                 total_rpnl = sum(
@@ -114,6 +115,7 @@ class EnterAndExit:
                     for item in resp
                     if item["symbol"].startswith(self._prefix)
                 )
+                logging.debug(f"looking to add loss if any {total_rpnl=}")
                 if total_rpnl < 0:
                     count = len(
                         [
@@ -123,7 +125,14 @@ class EnterAndExit:
                         ]
                     )
                     rate_to_be_added = total_rpnl / self._quantity
-                    rate_to_be_added += count * self._txn / 2
+                    txn_cost = count * self._txn / 2
+                    rate_to_be_added += txn_cost
+
+                    logging.debug(
+                        f"final {rate_to_be_added=} because of negative {total_rpnl=} and {txn_cost=} "
+                    )
+            else:
+                logging.warning(f"no positions for {self._symbol} in {resp}")
 
             target_buffer = self._target * self._fill_price / 100
             target_virtual = self._fill_price + target_buffer - rate_to_be_added
@@ -183,20 +192,18 @@ class EnterAndExit:
 
     def try_exiting_trade(self):
         try:
-            FLAG = False
             if self._is_stoploss_hit():
-                FLAG = True
+                self._time_mgr.set_last_trade_time(pdlm.now("Asia/Kolkata"))
+                self._is_trading_below_low = False
+                self._fn = "is_trading_below_low"
             elif self._ltp >= self._target_price:
                 args = self._get_modify_params()
                 logging.debug(f"modify order {args}")
                 resp = Helper.modify_order(args)
                 logging.debug(f"order id: {args['order_id']} modify {resp=}")
-                FLAG = True
+                self._fn = "remove_me"
+                return self._prefix
 
-            if FLAG:
-                self._time_mgr.set_last_trade_time(pdlm.now("Asia/Kolkata"))
-                self._is_trading_below_low = False
-                self._fn = "is_trading_below_low"
             else:
                 msg = (
                     f"{self._symbol} target: {self._target_price} < {self._ltp} > sl: {self._low} "

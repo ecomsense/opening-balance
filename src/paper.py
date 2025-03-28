@@ -260,5 +260,24 @@ if __name__ == "__main__":
 
         result = paper.positions
         print(result)
+
+        """
+        if resp and any(resp):
+            total_rpnl = sum(
+                item["rpnl"]
+                for item in resp
+                if item["symbol"].startswith(self._prefix)
+            )
+            if total_rpnl < 0:
+                count = len(
+                    [
+                        order
+                        for order in self._orders
+                        if order["symbol"].startswith(self._prefix)
+                    ]
+                )
+                rate_to_be_added = total_rpnl / self._quantity
+                rate_to_be_added += count * self._txn / 2
+        """
     except Exception as e:
         print(e)
