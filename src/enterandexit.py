@@ -124,7 +124,7 @@ class EnterAndExit:
                             if order["symbol"].startswith(self._prefix)
                         ]
                     )
-                    rate_to_be_added = total_rpnl / self._quantity
+                    rate_to_be_added = abs(total_rpnl) / self._quantity
                     txn_cost = count * self._txn / 2
                     rate_to_be_added += txn_cost
 
@@ -135,7 +135,7 @@ class EnterAndExit:
                 logging.warning(f"no positions for {self._symbol} in {resp}")
 
             target_buffer = self._target * self._fill_price / 100
-            target_virtual = self._fill_price + target_buffer - rate_to_be_added
+            target_virtual = self._fill_price + target_buffer + rate_to_be_added
             self._target_price = round(target_virtual / 0.05) * 0.05
             self._fn = "try_exiting_trade"
 
