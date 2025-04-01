@@ -216,15 +216,21 @@ class EnterAndExit:
             print_exc()
 
     def remove_me(self):
-        logging.info("FLAGGED FOR REMOVING")
+
+        if self._fn == "find_fill_price":
+            logging.info(f"{self._symbol} going to REMOVE after finding fill price")
+            self.find_fill_price()
+            self.remove_me()
         if self._fn == "try_exiting_trade":
+            logging.info(f"{self._symbol} going to REMOVE after force modify")
             args = self._get_modify_params()
             args["tag"] = "removing"
             resp = Helper.modify_order(args)
             logging.debug(f"order id: {args['order_id']} modify {resp=}")
+        else:
+            logging.info(f"{self._symbol} going to REMOVE without waiting for breakout")
 
         self._removable = True
-        self._fn = "remove_me"
 
     def run(self, orders, ltps, prefixes: list):
         try:

@@ -196,6 +196,7 @@ def main():
                 if isinstance(resp, str):
                     strgy_to_be_removed.append(resp)
                 logging.info(f"{msg} returned {resp}")
+            [strgy for strgy in strategies if not strgy._removable]
     except KeyboardInterrupt:
         __import__("sys").exit()
     except Exception as e:
