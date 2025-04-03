@@ -102,10 +102,10 @@ def _find_trading_symbol(
             # TODO will be missing in futures
             token = dct_sym[keyword]["token"]
             resp = Helper.history(exchange, token)
-            print(resp)
             if resp and any(resp):
                 low = resp[-1]["intl"]
                 atm = sym.get_atm(float(low))
+                print(low, atm)
                 logging.info(f"atm {atm} for underlying {keyword} from {low}")
                 result = sym.find_option_by_distance(
                     atm=atm,
