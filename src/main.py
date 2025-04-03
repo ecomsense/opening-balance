@@ -112,6 +112,7 @@ def _find_trading_symbol(
                     c_or_p=ce_or_pe,
                     dct_symbols=Helper.tokens_for_all_trading_symbols,
                 )
+                print(result)
                 symbol_info: dict[str, Any] = Helper.symbol_info(
                     user_settings["option_exchange"], result["symbol"]
                 )
