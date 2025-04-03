@@ -102,6 +102,7 @@ def _find_trading_symbol(
             # TODO will be missing in futures
             token = dct_sym[keyword]["token"]
             resp = Helper.history(exchange, token)
+            print(resp)
             if resp and any(resp):
                 low = resp[-1]["intl"]
                 atm = sym.get_atm(float(low))
@@ -112,7 +113,6 @@ def _find_trading_symbol(
                     c_or_p=ce_or_pe,
                     dct_symbols=Helper.tokens_for_all_trading_symbols,
                 )
-                print(result)
                 symbol_info: dict[str, Any] = Helper.symbol_info(
                     user_settings["option_exchange"], result["symbol"]
                 )
