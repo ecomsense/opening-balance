@@ -105,8 +105,8 @@ def _find_trading_symbol(
             if resp and any(resp):
                 low = resp[-1]["intl"]
                 atm = sym.get_atm(float(low))
-                print(low, atm)
                 logging.info(f"atm {atm} for underlying {keyword} from {low}")
+                print(Helper.tokens_for_all_trading_symbols)
                 result = sym.find_option_by_distance(
                     atm=atm,
                     distance=user_settings["moneyness"],
