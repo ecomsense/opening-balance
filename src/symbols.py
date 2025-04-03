@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 from toolkit.fileutils import Fileutils
+from constants import logging
 from typing import Dict, Optional
 
 dct_sym = {
@@ -87,46 +88,56 @@ class Symbols:
         return int(next_higher_strike)
 
     def get_tokens(self, strike):
-        df = pd.read_csv(self.csvfile)
-        lst = []
-        lst.append(self._base + self.expiry + "C" + str(strike))
-        lst.append(self._base + self.expiry + "P" + str(strike))
-        for v in range(1, dct_sym[self._base]["depth"]):
-            lst.append(
-                self._base
-                + self.expiry
-                + "C"
-                + str(strike + v * dct_sym[self._base]["diff"])
-            )
-            lst.append(
-                self._base
-                + self.expiry
-                + "P"
-                + str(strike + v * dct_sym[self._base]["diff"])
-            )
-            lst.append(
-                self._base
-                + self.expiry
-                + "C"
-                + str(strike - v * dct_sym[self._base]["diff"])
-            )
-            lst.append(
-                self._base
-                + self.expiry
-                + "P"
-                + str(strike - v * dct_sym[self._base]["diff"])
+        try:
+            df = pd.read_csv(self.csvfile)
+            lst = []
+            lst.append(self._base + self.expiry + "C" + str(strike))
+            lst.append(self._base + self.expiry + "P" + str(strike))
+            for v in range(1, dct_sym[self._base]["depth"]):
+                lst.append(
+                    self._base
+                    + self.expiry
+                    + "C"
+                    + str(strike + v * dct_sym[self._base]["diff"])
+                )
+                lst.append(
+                    self._base
+                    + self.expiry
+                    + "P"
+                    + str(strike + v * dct_sym[self._base]["diff"])
+                )
+                lst.append(
+                    self._base
+                    + self.expiry
+                    + "C"
+                    + str(strike - v * dct_sym[self._base]["diff"])
+                )
+                lst.append(
+                    self._base
+                    + self.expiry
+                    + "P"
+                    + str(strike - v * dct_sym[self._base]["diff"])
+                )
+
+            df["Exchange"] = self._option_exchange
+            tokens_found = (
+                df[df["TradingSymbol"].isin(lst)]
+                .assign(tknexc=df["Exchange"] + "|" + df["Token"].astype(str))[
+                    ["tknexc", "TradingSymbol"]
+                ]
+                .set_index("tknexc")
             )
 
-        df["Exchange"] = self._option_exchange
-        tokens_found = (
-            df[df["TradingSymbol"].isin(lst)]
-            .assign(tknexc=df["Exchange"] + "|" + df["Token"].astype(str))[
-                ["tknexc", "TradingSymbol"]
-            ]
-            .set_index("tknexc")
-        )
-        dct = tokens_found.to_dict()
-        return dct["TradingSymbol"]
+            if tokens_found.isna().any().any():
+                raise ValueError("tokens_found contains NaN values!")
+        except ValueError as v:
+            logging.error(f"{v} check expiry date in settings")
+            __import__("sys").exit(1)
+        except Exception as e:
+            logging.error(f"{e} while get tokens in symbols")
+        else:
+            dct = tokens_found.to_dict()
+            return dct["TradingSymbol"]
 
     def find_closest_premium(
         self, quotes: Dict[str, float], premium: float, contains: str

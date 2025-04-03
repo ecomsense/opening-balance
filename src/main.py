@@ -106,7 +106,6 @@ def _find_trading_symbol(
                 low = resp[-1]["intl"]
                 atm = sym.get_atm(float(low))
                 logging.info(f"atm {atm} for underlying {keyword} from {low}")
-                print(Helper.tokens_for_all_trading_symbols)
                 result = sym.find_option_by_distance(
                     atm=atm,
                     distance=user_settings["moneyness"],
@@ -183,7 +182,6 @@ def main():
         Helper.tokens_for_all_trading_symbols = find_instrument_tokens_to_trade(
             symbols_to_trade
         )
-
         # make strategy oject for each symbol selected
         strategies: list[EnterAndExit] = create_strategies(symbols_to_trade)
 
