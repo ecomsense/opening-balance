@@ -2,11 +2,8 @@ from traceback import print_exc
 import re
 from stock_brokers.finvasia.finvasia import Finvasia
 from stock_brokers.finvasia.api_helper import (
-    make_order_modify_args,
-    make_order_place_args,
     post_order_hook,
 )
-from toolkit.datastruct import filter_dictionary_by_keys
 from constants import O_CNFG, logging, O_SETG
 import pendulum as pdlm
 from toolkit.kokoo import blink, timer
@@ -174,19 +171,16 @@ class Helper:
     @classmethod
     def one_side(cls, bargs):
         try:
-            bargs = make_order_place_args(**bargs)
-            logging.debug(f"one side order place {bargs}")
             resp = cls.api.order_place(**bargs)
             return resp
         except Exception as e:
-            message = f"helper error {e} while placing order"
+            message = f"helper error {e} while placing order {bargs}"
             send_messages(message)
             print_exc()
 
     @classmethod
     def modify_order(cls, args):
         try:
-            args = make_order_modify_args(**args)
             resp = cls.api.order_modify(**args)
             return resp
         except Exception as e:
@@ -213,7 +207,7 @@ class Helper:
             orders = cls.api.orders
             if any(orders):
                 # print(orders[0].keys())
-                return post_order_hook(*orders)
+                return orders
             return [{}]
 
         except Exception as e:
@@ -225,34 +219,7 @@ class Helper:
     def trades(cls):
         try:
             from_api = []  # Return an empty list on failure
-            keys = [
-                "exchange",
-                "symbol",
-                "order_id",
-                "quantity",
-                "side",
-                "product",
-                "price_type",
-                "fill_shares",
-                "average_price",
-                "exchange_order_id",
-                "tag",
-                "validity",
-                "price_precison",
-                "tick_size",
-                "fill_timestamp",
-                "fill_quantity",
-                "fill_price",
-                "source",
-                "broker_timestamp",
-            ]
             from_api = cls.api.trades
-            """
-            if from_api:
-                # Apply filter to each order item
-                from_api = [filter_dictionary_by_keys(item, keys) for item in from_api]
-            """
-
         except Exception as e:
             send_messages(f"Error fetching trades: {e}")
             print_exc()
