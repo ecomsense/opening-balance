@@ -185,8 +185,8 @@ def main():
         # make strategy oject for each symbol selected
         strategies: list[EnterAndExit] = create_strategies(symbols_to_trade)
 
+        strgy_to_be_removed = []
         while not is_time_past(O_SETG["trade"]["stop"]):
-            strgy_to_be_removed = []
             for strgy in strategies:
                 msg = f"{strgy._symbol} ltp:{strgy._ltp} low:{strgy._low} {strgy._fn}"
                 resp = strgy.run(
@@ -195,7 +195,7 @@ def main():
                 if isinstance(resp, str):
                     strgy_to_be_removed.append(resp)
                 logging.info(f"{msg} returned {resp}")
-            [strgy for strgy in strategies if not strgy._removable]
+            strategies = [strgy for strgy in strategies if not strgy._removable]
     except KeyboardInterrupt:
         __import__("sys").exit()
     except Exception as e:
