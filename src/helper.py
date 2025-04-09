@@ -48,16 +48,17 @@ def send_messages(msg):
 def login():
 
     if O_SETG["trade"].get("live", 0) == 0:
+        send_messages("Using paper trading")
         api = Paper(**O_CNFG)
     else:
         api = Finvasia(**O_CNFG)
-    if api.authenticate():
-        message = "api connected"
-        send_messages(message)
-        return api
-    else:
-        send_messages("Failed to authenticate. .. exiting")
-        __import__("sys").exit(1)
+        if api.authenticate():
+            message = "Live trading mode"
+            send_messages(message)
+            return api
+        else:
+            send_messages("Failed to authenticate. .. exiting")
+            __import__("sys").exit(1)
 
 
 # add a decorator to check if wait_till is past
