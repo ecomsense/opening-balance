@@ -108,7 +108,8 @@ class Helper:
                 )
                 to = pdlm.now().subtract(days=i).timestamp()
                 data_now = cls.api.historical(exchange, token, fm, to)
-                if data_now and any(data_now):
+                if data_now and len(data_now) > 1:
+                    logging.debug(f"we picked candle {data_now[-1]}")
                     return data_now
                 i += 1
         except Exception as e:
@@ -125,7 +126,7 @@ class Helper:
                 if not low:
                     logging.debug(f"trying to get low for {symbol=} and {token=}")
                     resp = cls.history(exchange, token)
-                    low = resp[-2]["intl"]
+                    low = resp[-1]["intl"]
                 cls.subscribed[symbol] = {
                     "symbol": symbol,
                     "key": key,

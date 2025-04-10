@@ -103,7 +103,6 @@ def _find_trading_symbol(
             token = dct_sym[keyword]["token"]
             resp = Helper.history(exchange, token)
             if resp and any(resp):
-                logging.debug(f"we picked candle {resp[-1]['intl']}")
                 low = resp[-1]["intl"]
                 atm = sym.get_atm(float(low))
                 logging.info(f"atm {atm} for underlying {keyword} from {low}")
