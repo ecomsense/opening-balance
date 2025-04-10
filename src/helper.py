@@ -1,9 +1,6 @@
 from traceback import print_exc
 import re
 from stock_brokers.finvasia.finvasia import Finvasia
-from stock_brokers.finvasia.api_helper import (
-    post_order_hook,
-)
 from constants import O_CNFG, logging, O_SETG
 import pendulum as pdlm
 from toolkit.kokoo import blink, timer
@@ -41,23 +38,18 @@ def find_mcx_exit_condition(symbol):
         return condition
 
 
-def send_messages(msg):
-    print(msg)
-
-
 def login():
 
     if O_SETG["trade"].get("live", 0) == 0:
-        send_messages("Using paper trading")
+        logging.info("Using paper trading")
         api = Paper(**O_CNFG)
     else:
         api = Finvasia(**O_CNFG)
         if api.authenticate():
-            message = "Live trading mode"
-            send_messages(message)
+            logging.info("Live trading mode")
             return api
         else:
-            send_messages("Failed to authenticate. .. exiting")
+            logging.error("Failed to authenticate. .. exiting")
             __import__("sys").exit(1)
 
 
@@ -166,7 +158,7 @@ class Helper:
                 return None
         except Exception as e:
             message = f"{e} while ltp"
-            send_messages(message)
+            logging.warning(message)
             print_exc()
 
     @classmethod
@@ -176,7 +168,7 @@ class Helper:
             return resp
         except Exception as e:
             message = f"helper error {e} while placing order {bargs}"
-            send_messages(message)
+            logging.warning(message)
             print_exc()
 
     @classmethod
@@ -186,7 +178,7 @@ class Helper:
             return resp
         except Exception as e:
             message = f"helper error {e} while modifying order"
-            send_messages(message)
+            logging.warning(message)
             print_exc()
 
     @classmethod
@@ -199,7 +191,7 @@ class Helper:
             return [{}]
 
         except Exception as e:
-            send_messages(f"Error fetching positions: {e}")
+            logging.warning(f"Error fetching positions: {e}")
             print_exc()
 
     @classmethod
@@ -212,7 +204,7 @@ class Helper:
             return [{}]
 
         except Exception as e:
-            send_messages(f"Error fetching orders: {e}")
+            logging.warning(f"Error fetching orders: {e}")
             print_exc()
 
     @classmethod
@@ -222,7 +214,7 @@ class Helper:
             from_api = []  # Return an empty list on failure
             from_api = cls.api.trades
         except Exception as e:
-            send_messages(f"Error fetching trades: {e}")
+            logging.warning(f"Error fetching trades: {e}")
             print_exc()
         finally:
             return from_api
@@ -235,7 +227,7 @@ class Helper:
             else:
                 quantity = abs(pos["quantity"])
 
-            send_messages(f"trying to close {pos['symbol']}")
+            logging.debug(f"trying to close {pos['symbol']}")
             if pos["quantity"] < 0:
                 args = dict(
                     symbol=pos["symbol"],
@@ -248,7 +240,7 @@ class Helper:
                     tag="close",
                 )
                 resp = cls.api.order_place(**args)
-                send_messages(f"api responded with {resp}")
+                logging.info(f"api responded with {resp}")
             elif quantity > 0:
                 args = dict(
                     symbol=pos["symbol"],
@@ -261,7 +253,7 @@ class Helper:
                     tag="close",
                 )
                 resp = cls.api.order_place(**args)
-                send_messages(f"api responded with {resp}")
+                logging.info(f"api responded with {resp}")
 
     @classmethod
     def pnl(cls, key="urmtom"):
@@ -292,7 +284,7 @@ class Helper:
                     ttl += pos[key]
         except Exception as e:
             message = f"while calculating {e}"
-            send_messages(f"api responded with {message}")
+            logging.warning(f"api responded with {message}")
             print_exc()
         finally:
             return ttl
