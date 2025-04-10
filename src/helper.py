@@ -102,7 +102,7 @@ class Helper:
             for i in range(4):
                 fm = (
                     pdlm.now()
-                    .subtrace(days=i)
+                    .subtract(days=i)
                     .replace(hour=0, minute=0, second=0, microsecond=0)
                     .timestamp()
                 )
