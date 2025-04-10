@@ -98,10 +98,15 @@ class Helper:
     @classmethod
     def history(cls, exchange, token):
         try:
-            now = pdlm.now()
-            fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
-            to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
-            return cls.api.historical(exchange, token, fm, to)
+            i = 0
+            for i in range(4):
+                now = pdlm.now().subtract(days=i)
+                fm = now.replace(hour=9, minute=0, second=0, microsecond=0).timestamp()
+                to = now.replace(hour=9, minute=17, second=0, microsecond=0).timestamp()
+                data_now = cls.api.historical(exchange, token, fm, to)
+                if data_now and any(data_now):
+                    return data_now
+                i += 1
         except Exception as e:
             logging.error(f"{e} in history")
 
