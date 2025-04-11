@@ -150,8 +150,6 @@ class EnterAndExit:
                     self._buy_order = order
                     self._fill_price = float(order["fill_price"])
                     self._set_target()
-                else:
-                    logging.info(f'{self._id} is not equal to {order["order_id"]}')
         except Exception as e:
             logging.error(f"{e} find_fill_price")
             print_exc()
