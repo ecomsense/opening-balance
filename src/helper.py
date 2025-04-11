@@ -208,7 +208,7 @@ class Helper:
     def orders(cls):
         try:
             orders = cls.api.orders
-            if any(orders):
+            if orders and any(orders):
                 # print(orders[0].keys())
                 return orders
             return [{}]
