@@ -95,7 +95,7 @@ class EnterAndExit:
 
             # Validate sell order response
             if not self._sell_order or not isinstance(self._sell_order, str):
-                logging.error(f"Invalid sell order response: {self._sell_order}")
+                logging.error(f"Invalid stop order response: {self._sell_order}")
                 __import__("sys").exit(1)
             else:
                 logging.info(f"TARGET order for {self._id} is {self._sell_order}")
@@ -150,6 +150,8 @@ class EnterAndExit:
                     self._buy_order = order
                     self._fill_price = order["fill_price"]
                     self._set_target()
+                else:
+                    logging.info(f'{self._id} is not equal to {order["order_id"]}')
         except Exception as e:
             logging.error(f"{e} find_fill_price")
             print_exc()
