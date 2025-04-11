@@ -148,7 +148,7 @@ class EnterAndExit:
             for order in self._orders:
                 if self._id == order["order_id"]:
                     self._buy_order = order
-                    self._fill_price = order["fill_price"]
+                    self._fill_price = float(order["fill_price"])
                     self._set_target()
                 else:
                     logging.info(f'{self._id} is not equal to {order["order_id"]}')
