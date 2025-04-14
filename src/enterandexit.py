@@ -107,7 +107,7 @@ class EnterAndExit:
     def _set_target(self):
         try:
             rate_to_be_added = 0
-            logging.debug("setting target for {self._symbol}")
+            logging.debug(f"setting target for {self._symbol}")
             resp = Helper.positions()
             if resp and any(resp):
                 total_rpnl = sum(
