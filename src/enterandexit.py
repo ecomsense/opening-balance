@@ -126,6 +126,9 @@ class EnterAndExit:
                     )
                     rate_to_be_added = abs(total_rpnl) / self._quantity
                     txn_cost = count * self._txn / 2
+                    logging.debug(
+                        f"txn: {txn_cost} = orders:{count} * txn_rate:{self._txn} / 2"
+                    )
                     rate_to_be_added += txn_cost
 
                     logging.debug(
