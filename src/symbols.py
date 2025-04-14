@@ -3,6 +3,7 @@ import re
 from toolkit.fileutils import Fileutils
 from constants import logging
 from typing import Dict, Optional
+from pprint import pprint
 
 dct_sym = {
     "NIFTY": {
@@ -142,19 +143,22 @@ class Symbols:
     def find_closest_premium(
         self, quotes: Dict[str, float], premium: float, contains: str
     ) -> Optional[str]:
-        contains = self.expiry + contains
+
+        contains = self._base + self.expiry + contains
         # Create a dictionary to store symbol to absolute difference mapping
         symbol_differences: Dict[str, float] = {}
 
         for base, ltp in quotes.items():
             if re.search(re.escape(contains), base):
-                difference = abs(ltp - premium)
+                print("symbol.find_closest_premium", contains, base)
+                difference = abs(float(ltp) - premium)
                 symbol_differences[base] = difference
 
         # Find the symbol with the lowest difference
         closest_symbol = min(
             symbol_differences, key=symbol_differences.get, default=None
         )
+        pprint(symbol_differences)
 
         return closest_symbol
 

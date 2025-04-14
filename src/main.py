@@ -126,6 +126,43 @@ def _find_trading_symbol(
         return {}
 
 
+def _temp(ce_or_pe: Literal["C", "P"], symbol_item: dict[str, Any]):
+    """
+    find trading symbol to trade based on the atm giuser_settingsen the
+    symbol item
+
+    Args:
+        ce_or_pe (Literal["C", "P"]): A string that denotes Call or Put
+        symbol_item (dict[str, Any]): symbol item selected to find trading symbol
+
+    Returns:
+        symbol_info: trading symbol
+
+    Raises:
+        Exception: If there is any error
+
+    """
+    try:
+        for keyword, user_settings in symbol_item.items():
+            sym = Symbols(
+                option_exchange=user_settings["option_exchange"],
+                base=user_settings["base"],
+                expiry=user_settings["expiry"],
+            )
+            result_symbol = sym.find_closest_premium(
+                Helper.get_quotes(), premium=200, contains=ce_or_pe
+            )
+            print(result_symbol)
+            symbol_info: dict[str, Any] = Helper.symbol_info(
+                user_settings["option_exchange"], result_symbol
+            )
+            return symbol_info
+    except Exception as e:
+        logging.error(f"{e} while finding the trading symbol")
+        print_exc()
+        return {}
+
+
 def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
     """
     Creates a list of strategies based on the provided symbols_to_trade.
@@ -147,6 +184,7 @@ def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
                 symbol_info = _find_trading_symbol(
                     option_type, {keyword: user_settings}
                 )
+                # symbol_info = _temp(option_type, {keyword: user_settings})
                 if any(symbol_info):
                     strgy = EnterAndExit(
                         prefix=keyword,

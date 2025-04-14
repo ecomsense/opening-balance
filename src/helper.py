@@ -99,7 +99,7 @@ class Helper:
     def history(cls, exchange, token):
         try:
             i = 0
-            for i in range(4):
+            for i in range(5):
                 fm = (
                     pdlm.now()
                     .subtract(days=i)
@@ -114,6 +114,11 @@ class Helper:
                 i += 1
         except Exception as e:
             logging.error(f"{e} in history")
+        """
+        finally:
+            data_now = [{"intl": 22550}, {"intl": 22550}]
+            return data_now
+        """
 
     @classmethod
     def symbol_info(cls, exchange, symbol):
