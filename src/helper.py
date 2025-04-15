@@ -57,10 +57,9 @@ def login():
 def is_not_rate_limited(func):
     # Decorator to enforce a 1-second delay between calls
     def wrapper(*args, **kwargs):
-        now = pdlm.now()
-        if now < Helper.wait_till:
+        while pdlm.now() < Helper.wait_till:
             blink()
-        Helper.wait_till = now.add(seconds=1)
+        Helper.wait_till = pdlm.now().add(seconds=1)
         return func(*args, **kwargs)
 
     return wrapper

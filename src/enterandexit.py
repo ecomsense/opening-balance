@@ -161,6 +161,7 @@ class EnterAndExit:
         try:
             flag = False
             if O_SETG["trade"].get("live", 0) == 0:
+                logging.debug("CHECKING STOP IN PAPER MODE")
                 flag = Helper.api.can_move_order_to_trade(self._sell_order, self._ltp)
                 return flag
             for order in self._orders:
@@ -170,6 +171,10 @@ class EnterAndExit:
                     )
                     flag = True
                     break
+                else:
+                    logging.debug(
+                        f"STOP LOSS #{self._sell_order} is NOT EQUAL to {order['order_id']}"
+                    )
             return flag
         except Exception as e:
             logging.error(f"{e} get order from book{self._orders}")

@@ -27,7 +27,8 @@ if not O_FUTL.is_file_exists(S_LOG):
     """
     print("creating data dir")
     O_FUTL.add_path(S_LOG)
-else:
+elif O_FUTL.is_file_not_2day(S_LOG):
+    print("log file not modified today, nuking it")
     O_FUTL.nuke_file(S_LOG)
 
 
