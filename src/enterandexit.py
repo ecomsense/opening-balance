@@ -46,14 +46,16 @@ class EnterAndExit:
         self._fn = "is_trading_below_low"
 
     def is_trading_below_low(self) -> bool:
-        if self._ltp < self._low:
+        """checks if symbol is trading below or equal to low and return true or false"""
+        if self._ltp <= self._low:
             self._is_trading_below_low = True
             self._fn = "wait_for_breakout"
         return self._is_trading_below_low
 
     def wait_for_breakout(self):
+        """if trading below above is true, we wait for ltp to be equal or greater than low"""
         try:
-            if self._ltp > self._low and self._time_mgr.can_trade:
+            if self._ltp >= self._low and self._time_mgr.can_trade:
                 bargs = dict(
                     symbol=self._symbol,
                     quantity=self._quantity,
