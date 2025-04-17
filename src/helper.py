@@ -43,6 +43,9 @@ def login():
     if O_SETG["trade"].get("live", 0) == 0:
         logging.info("Using paper trading")
         api = Paper(**O_CNFG)
+        if api.authenticate():
+            logging.info("Paper trading mode")
+            return api
     else:
         api = Finvasia(**O_CNFG)
         if api.authenticate():
