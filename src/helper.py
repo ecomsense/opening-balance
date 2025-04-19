@@ -6,6 +6,7 @@ import pendulum as pdlm
 from toolkit.kokoo import blink, timer
 from wserver import Wserver
 from paper import Paper
+from importlib import import_module
 
 
 def find_underlying(symbol):
@@ -39,21 +40,23 @@ def find_mcx_exit_condition(symbol):
 
 
 def login():
-
-    if O_SETG["trade"].get("live", 0) == 0:
-        logging.info("Using paper trading")
-        api = Paper(**O_CNFG)
-        if api.authenticate():
-            logging.info("Paper trading mode")
-            return api
-    else:
-        api = Finvasia(**O_CNFG)
-        if api.authenticate():
+    try:
+        # Initialize API with config
+        if O_SETG["trade"].get("live", 0) == 0:
+            logging.info("Using paper trading")
+            api = Paper(**O_CNFG)
+        else:
             logging.info("Live trading mode")
+            api = Finvasia(**O_CNFG)
+
+        if api and api.authenticate():
+            print("authentication successfull")
             return api
         else:
-            logging.error("Failed to authenticate. .. exiting")
-            __import__("sys").exit(1)
+            print("Failed to authenticate. .. exiting")
+    except Exception as e:
+        print(f"login exception {e}")
+        __import__("sys").exit(1)
 
 
 # add a decorator to check if wait_till is past
