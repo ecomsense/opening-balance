@@ -6,7 +6,6 @@ import pendulum as pdlm
 from toolkit.kokoo import blink, timer
 from wserver import Wserver
 from paper import Paper
-from importlib import import_module
 
 
 def find_underlying(symbol):
@@ -114,7 +113,6 @@ class Helper:
                 to = pdlm.now().subtract(days=i).timestamp()
                 data_now = cls.api.historical(exchange, token, fm, to)
                 if data_now and len(data_now) > 1:
-                    logging.debug(f"we are going to pick candle {data_now[-2]}")
                     return data_now
                 i += 1
         except Exception as e:
@@ -348,6 +346,7 @@ if __name__ == "__main__":
             }
             resp = Helper.modify_order(args)
             print(resp)
+            print(resp)
 
         def margin():
             resp = Helper.api.margins
@@ -357,9 +356,6 @@ if __name__ == "__main__":
         orders()
         resp = Helper.pnl("rpnl")
         print(resp)
-
-        rsp = Helper.history(exchange="MCX", token="447898")
-        print(rsp)
 
         # test_history(exchange="NFO", symbol="BANKNIFTY27MAR25C50000")
     except Exception as e:

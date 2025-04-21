@@ -112,6 +112,10 @@ class EnterAndExit:
             logging.debug(f"setting target for {self._symbol}")
             resp = Helper.positions()
             if resp and any(resp):
+                pd.DataFrame(resp).to_csv(
+                    S_DATA + pdlm.now().format("HH_mm_ss_") + "positions.csv",
+                    index=False,
+                )
                 total_rpnl = sum(
                     item["rpnl"]
                     for item in resp
@@ -127,7 +131,7 @@ class EnterAndExit:
                         ]
                     )
                     rate_to_be_added = abs(total_rpnl) / self._quantity
-                    txn_cost = count * self._txn / 2
+                    txn_cost = (count * self._txn / 2) + self._txn
                     logging.debug(
                         f"txn: {txn_cost} = orders:{count} * txn_rate:{self._txn} / 2"
                     )
@@ -259,6 +263,8 @@ class EnterAndExit:
 
 if __name__ == "__main__":
     from helper import Helper
+    import pandas as pd
+    from constants import S_DATA
 
     def iter_tradebook(orders, search_id):
         try:
@@ -271,5 +277,7 @@ if __name__ == "__main__":
             print_exc()
 
     Helper.api
-    resp = Helper.trades()
-    iter_tradebook(resp, "25031900397534")
+    resp = Helper.positions()
+    pd.DataFrame(resp).to_csv(
+        S_DATA + pdlm.now().format("HH_mm_ss_") + "positions.csv",
+    )
