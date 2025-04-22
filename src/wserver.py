@@ -25,6 +25,7 @@ class Wserver:
 
     # application callbacks
     def event_handler_order_update(self, message):
+        # handle order updates here
         pass
 
     def event_handler_quote_update(self, message):

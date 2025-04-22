@@ -1,21 +1,20 @@
 import pendulum
-from constants import O_SETG
 
 
 class TimeManager:
-    def __init__(self):
+    def __init__(self, rest_min):
         self.last_trade_time = None
         self.market_open = pendulum.today().at(9, 0, 0)  # Market starts at 9:00 AM
         self.market_close = pendulum.today().at(23, 55, 0)  # Market closes at 3:30 PM
         self.candle_times = self._generate_candle_times()
+        self.rest_min = rest_min
 
     def _generate_candle_times(self):
         """Generate a list of 1-minute candle close times from market open to close."""
         times = []
         time = self.market_open
-        minutes = O_SETG["trade"]["rest_min"]
         while time < self.market_close:
-            time = time.add(minutes=minutes)
+            time = time.add(minutes=self.rest_min)
             times.append(time)
         return times
 

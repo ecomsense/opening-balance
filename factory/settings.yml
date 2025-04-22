@@ -1,18 +1,8 @@
 trade:
   target: 2
-  start: "9:16"
+  start: "9:17"
   stop: "23:50"
-  rest_min: 3
-  live: 0      # 0 for paper 1 for live
-NATURALGAS:
-  base: NATURALGAS
-  option_exchange: MCX
-  moneyness: -1      # 0=atm 1=otm -1=itm
-  expiry: 23APR25
-  quantity: 1250
-  target: 5
-  txn: 0.5  # points for each losing trade
-  future_expiry: 25APR25 
+  live: 1      # 0 for paper 1 for live
 log:
   show: 0
   level: 10
@@ -20,15 +10,36 @@ BANKNIFTY:
   base: BANKNIFTY
   option_exchange: NFO
   moneyness: -1      # 0=atm 1=otm -1=itm
-  expiry: 27MAR25
+  expiry: 24APR25
   quantity: 30
   target: 5
   txn: 2             # points for each losing trade
+  rest_min: 1
 NIFTY:
   base: NIFTY
   option_exchange: NFO
   moneyness: -1       # 0=atm 1=otm -1=itm
-  expiry: 27MAR25
+  expiry: 24APR25
   quantity: 75
   target: 5
   txn: 1             # points for each losing trade
+  rest_min: 1
+NATURALGAS:
+  base: NATURALGAS
+  option_exchange: MCX
+  moneyness: 1      # 0=atm 1=otm -1=itm
+  expiry: 23APR25
+  quantity: 1250
+  target: 4
+  txn: 0.2  # points for each losing trade
+  future_expiry: 25APR25 
+  rest_min: 3
+MIDCPNIFTY:
+  base: MIDCPNIFTY
+  option_exchange: NFO
+  moneyness: -1       # 0=atm 1=otm -1=itm
+  expiry: 24APR25
+  quantity: 120
+  target: 5
+  txn: 1             # points for each losing trade
+  rest_min: 1

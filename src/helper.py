@@ -4,7 +4,6 @@ from stock_brokers.finvasia.finvasia import Finvasia
 from constants import O_CNFG, logging, O_SETG
 import pendulum as pdlm
 from toolkit.kokoo import blink, timer
-from wserver import Wserver
 from paper import Paper
 
 
@@ -80,7 +79,6 @@ class Helper:
     def api(cls):
         if cls._api is None:
             cls._api = login()
-            cls.ws = Wserver(cls._api, ["NSE:24"])
         cls.wait_till = pdlm.now().add(seconds=1)
         return cls._api
 
