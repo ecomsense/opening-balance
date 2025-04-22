@@ -10,7 +10,6 @@ from helper import Helper
 from traceback import print_exc
 from timemanager import TimeManager
 import pendulum as pdlm
-import pandas as pd
 from constants import S_DATA
 
 
@@ -115,10 +114,6 @@ class EnterAndExit:
             logging.debug(f"setting target for {self._symbol}")
             resp = Helper.positions()
             if resp and any(resp):
-                pd.DataFrame(resp).to_csv(
-                    S_DATA + pdlm.now().format("HH_mm_ss_") + "positions.csv",
-                    index=False,
-                )
                 total_rpnl = sum(
                     item["rpnl"]
                     for item in resp
@@ -276,9 +271,3 @@ if __name__ == "__main__":
         except Exception as e:
             logging.error(f"{e} get order from book")
             print_exc()
-
-    Helper.api
-    resp = Helper.positions()
-    pd.DataFrame(resp).to_csv(
-        S_DATA + pdlm.now().format("HH_mm_ss_") + "positions.csv",
-    )
