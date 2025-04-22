@@ -10,6 +10,7 @@ from helper import Helper
 from traceback import print_exc
 from timemanager import TimeManager
 import pendulum as pdlm
+import pandas as pd
 
 
 class EnterAndExit:
@@ -263,7 +264,6 @@ class EnterAndExit:
 
 if __name__ == "__main__":
     from helper import Helper
-    import pandas as pd
     from constants import S_DATA
 
     def iter_tradebook(orders, search_id):
