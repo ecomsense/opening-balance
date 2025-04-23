@@ -33,7 +33,7 @@ class EnterAndExit:
         target: float,
         quantity: int,
         txn: int,
-        rest_min: int,
+        time_manager: TimeManager,
     ):
         self._prefix = prefix
         self._symbol = symbol
@@ -44,7 +44,7 @@ class EnterAndExit:
         self._target = target
         self._quantity = quantity
         self._txn = txn
-        self._time_mgr = TimeManager(rest_min)
+        self._time_mgr = time_manager
         self._fn = "is_trading_below_low"
 
     def is_trading_below_low(self) -> bool:

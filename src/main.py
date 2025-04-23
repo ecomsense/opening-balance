@@ -6,6 +6,7 @@ from traceback import print_exc
 from symbols import Symbols, dct_sym
 from typing import Any, Literal
 from wserver import Wserver
+from timeManager import TimeManager
 
 
 def get_symbols_to_trade() -> dict[str, Any]:
@@ -187,6 +188,7 @@ def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
                 )
                 # symbol_info = _temp(option_type, {keyword: user_settings})
                 if any(symbol_info):
+                    rest_min = user_settings.get("rest_min", 1)
                     strgy = EnterAndExit(
                         prefix=keyword,
                         symbol=symbol_info["symbol"],
@@ -196,7 +198,7 @@ def create_strategies(symbols_to_trade: dict[str, Any]) -> list:
                         quantity=user_settings["quantity"],
                         target=user_settings["target"],
                         txn=user_settings["txn"],
-                        rest_min=user_settings["rest_min"],
+                        time_manager=TimeManager(rest_min=rest_min),
                     )
                     strategies.append(strgy)
                 else:
