@@ -8,7 +8,7 @@ Multiple trades will be triggered and to be tracked separetely.
 from constants import logging, O_SETG
 from helper import Helper
 from traceback import print_exc
-from timemanager import TimeManager
+from time_manager import TimeManager
 import pendulum as pdlm
 from constants import S_DATA
 

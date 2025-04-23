@@ -6,7 +6,7 @@ from traceback import print_exc
 from symbols import Symbols, dct_sym
 from typing import Any, Literal
 from wserver import Wserver
-from timeManager import TimeManager
+from time_manager import TimeManager
 
 
 def get_symbols_to_trade() -> dict[str, Any]:
