@@ -6,8 +6,8 @@ class TimeManager:
         self.last_trade_time = None
         self.market_open = pendulum.today().at(9, 0, 0)  # Market starts at 9:00 AM
         self.market_close = pendulum.today().at(23, 55, 0)  # Market closes at 3:30 PM
-        self.candle_times = self._generate_candle_times()
         self.rest_min = rest_min
+        self.candle_times = self._generate_candle_times()
 
     def _generate_candle_times(self):
         """Generate a list of 1-minute candle close times from market open to close."""
