@@ -2,7 +2,7 @@ import pendulum
 
 
 class TimeManager:
-    def __init__(self, rest_min):
+    def __init__(self, rest_min: int):
         self.last_trade_time = None
         self.market_open = pendulum.today().at(9, 0, 0)  # Market starts at 9:00 AM
         self.market_close = pendulum.today().at(23, 55, 0)  # Market closes at 3:30 PM
